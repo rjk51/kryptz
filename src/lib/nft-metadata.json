@@ -1,0 +1,17 @@
+{
+  "name": "Flametail",
+  "description": "A fiery-tailed creature known for its blazing speed and fierce loyalty. Legends say its flame burns brighter as it grows.",
+  "image": "ipfs://QmExampleImageCID/flametail.png",
+  "external_url": "https://kryptz.game/creature/flametail",
+  "attributes": [
+    { "trait_type": "Level", "value": 7 },
+    { "trait_type": "Type", "value": "Fire" },
+    { "trait_type": "Rarity", "value": "Epic" },
+    { "trait_type": "Evolution Stage", "value": "Stage 1" },
+    { "trait_type": "XP", "value": 1450 },
+    { "trait_type": "Power", "value": 82 },
+    { "trait_type": "Speed", "value": 95 },
+    { "trait_type": "Defense", "value": 60 },
+    { "trait_type": "Intelligence", "value": 70 }
+  ]
+}
