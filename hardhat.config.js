@@ -4,7 +4,7 @@ require("@nomicfoundation/hardhat-toolbox");
 const { PRIVATE_KEY, CORE_RPC_URL } = process.env;
 
 module.exports = {
-  solidity: "0.8.20",
+  solidity: "0.8.27",
   networks: {
     coretestnet: {
       url: CORE_RPC_URL || "https://rpc.test2.btcs.network",

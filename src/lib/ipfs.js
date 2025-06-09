@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const PINATA_BASE_URL = "https://api.pinata.cloud/pinning";
-const PINATA_GATEWAY = "https://gateway.pinata.cloud/ipfs/";
+const PINATA_GATEWAY = `${process.env.NEXT_PUBLIC_GATEWAY_URL}`;
 
 const PINATA_API_KEY = process.env.NEXT_PUBLIC_PINATA_API_KEY;
 const PINATA_SECRET_API_KEY = process.env.NEXT_PUBLIC_PINATA_SECRET_API_KEY;
