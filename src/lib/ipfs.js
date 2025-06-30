@@ -1,41 +1,20 @@
-import axios from "axios";
-
-const PINATA_BASE_URL = "https://api.pinata.cloud/pinning";
-const PINATA_GATEWAY = `${process.env.NEXT_PUBLIC_GATEWAY_URL}`;
-
-const PINATA_API_KEY = process.env.NEXT_PUBLIC_PINATA_API_KEY;
-const PINATA_SECRET_API_KEY = process.env.NEXT_PUBLIC_PINATA_SECRET_API_KEY;
-
-if (!PINATA_API_KEY || !PINATA_SECRET_API_KEY) {
-  throw new Error(
-    "Pinata API keys are missing. Set NEXT_PUBLIC_PINATA_API_KEY and NEXT_PUBLIC_PINATA_SECRET_API_KEY in your .env.local file."
-  );
-}
-
-// Upload an image file to IPFS via Pinata
-export async function uploadImageToIPFS(file) {
-  const formData = new FormData();
-  formData.append("file", file);
-
-  const res = await axios.post(`${PINATA_BASE_URL}/pinFileToIPFS`, formData, {
-    maxBodyLength: Infinity,
-    headers: {
-      "Content-Type": "multipart/form-data",
-      pinata_api_key: PINATA_API_KEY,
-      pinata_secret_api_key: PINATA_SECRET_API_KEY,
-    },
-  });
-  return `${PINATA_GATEWAY}${res.data.IpfsHash}`;
-}
-
-// Upload JSON metadata to IPFS via Pinata
-export async function uploadMetadataToIPFS(metadata) {
-  const res = await axios.post(`${PINATA_BASE_URL}/pinJSONToIPFS`, metadata, {
-    headers: {
-      "Content-Type": "application/json",
-      pinata_api_key: PINATA_API_KEY,
-      pinata_secret_api_key: PINATA_SECRET_API_KEY,
-    },
-  });
-  return `${PINATA_GATEWAY}${res.data.IpfsHash}`;
+export async function uploadToPinata(metadata) {
+  // Call the Next.js API route to upload metadata to Pinata
+  try {
+    const response = await fetch("/api/pinata-upload", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ metadata }),
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Pinata upload failed: ${errText}`);
+    }
+    const data = await response.json();
+    return data.gatewayUrl;
+  } catch (error) {
+    throw new Error("Failed to upload to Pinata: " + (error?.message || error));
+  }
 }

@@ -20,7 +20,7 @@ contract CreatureNFT is
         address initialOwner
     ) ERC721("CreatureNFT", "CRTR") Ownable(initialOwner) {}
 
-    function mintCreature(address to, string memory uri) public onlyOwner {
+    function mintCreature(address to, string memory uri) public {
         uint256 tokenId = _tokenIdCounter;
         _tokenIdCounter++;
         _safeMint(to, tokenId);

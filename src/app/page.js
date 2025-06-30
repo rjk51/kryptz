@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useAccount, useContractRead } from "wagmi";
 import { BrowserProvider, Contract } from "ethers";
+import creaturesData from "../../creatures.json";
+import { uploadToPinata } from "../lib/ipfs";
 
 export default function Home() {
   const [selectedTab, setSelectedTab] = useState("home");
@@ -192,6 +194,7 @@ function CreaturesContent() {
   const [userCreatures, setUserCreatures] = useState([]);
   const [loading, setLoading] = useState(false);
   const [minting, setMinting] = useState(false);
+  const [mintStatus, setMintStatus] = useState("");
 
   // Contract details (update with your actual values)
   const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
@@ -200,6 +203,7 @@ function CreaturesContent() {
     "function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)",
     "function tokenURI(uint256 tokenId) view returns (string)",
     "function mintFirstCreature() public",
+    "function mintCreature(address to, string uri)",
   ];
 
   async function fetchCreatures() {
@@ -274,16 +278,70 @@ function CreaturesContent() {
   async function handleMint() {
     if (!isConnected || userCreatures.length > 0) return;
     setMinting(true);
+    setMintStatus("Selecting your creature...");
+
+    // 1. Randomly select a base creature
+    const base = creaturesData[Math.floor(Math.random() * creaturesData.length)];
+
+    // 2. Generate random traits within the given ranges
+    function randomInRange([min, max]) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+    const traits = {
+      power: randomInRange(base.traitRanges.power),
+      speed: randomInRange(base.traitRanges.speed),
+      defense: randomInRange(base.traitRanges.defense),
+      intelligence: randomInRange(base.traitRanges.intelligence),
+    };
+
+    // 3. Construct metadata
+    const metadata = {
+      name: base.name,
+      description: base.description,
+      image: base.image,
+      external_url: `https://kryptz.game/creature/${base.name.toLowerCase()}`,
+      attributes: [
+        { trait_type: "Level", value: 1 },
+        { trait_type: "XP", value: 0 },
+        { trait_type: "Type", value: base.type },
+        { trait_type: "Rarity", value: "Common" },
+        { trait_type: "Evolution Stage", value: "Stage 1" },
+        { trait_type: "Power", value: traits.power },
+        { trait_type: "Speed", value: traits.speed },
+        { trait_type: "Defense", value: traits.defense },
+        { trait_type: "Intelligence", value: traits.intelligence },
+      ],
+    };
+
+    // 4. Upload metadata to Pinata
+    setMintStatus("Uploading metadata to IPFS...");
+    let metadataUrl;
+    try {
+      metadataUrl = await uploadToPinata(
+        metadata,
+        process.env.PINATA_JWT,
+        process.env.GATEWAY_URL
+      );
+    } catch (err) {
+      alert("Pinata upload failed: " + err.message);
+      setMinting(false);
+      setMintStatus("");
+      return;
+    }
+
+    // 5. Mint NFT with metadata URL
+    setMintStatus("Minting your creature on blockchain...");
     try {
       const provider = new BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const contract = new Contract(contractAddress, contractABI, signer);
-      const tx = await contract.mintFirstCreature();
+      const tx = await contract.mintCreature(address, metadataUrl);
       await tx.wait();
-      // Wait a bit for the chain to update, then refetch
+      setMintStatus("Creature minted! Updating your collection...");
       setTimeout(fetchCreatures, 3000);
     } catch (err) {
       alert("Mint failed: " + (err?.reason || err?.message || err));
+      setMintStatus("");
     }
     setMinting(false);
   }
@@ -378,6 +436,18 @@ function CreaturesContent() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {minting && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex flex-col items-center justify-center z-50">
+          <div className="nes-container is-dark is-rounded">
+            <p className="text-warning text-lg mb-2">Minting in progress...</p>
+            <p className="text-success text-sm">{mintStatus}</p>
+            <div className="mt-4 flex justify-center">
+              <i className="nes-icon coin is-large animate-spin"></i>
+            </div>
+          </div>
         </div>
       )}
     </div>
