@@ -11,6 +11,7 @@
   "dependencies": {
     "@fontsource/press-start-2p": "^5.2.5",
     "@rainbow-me/rainbowkit": "^2.2.6",
+    "@supabase/supabase-js": "^2.50.3",
     "@tanstack/react-query": "^5.80.5",
     "lucide-react": "^0.511.0",
     "nes.css": "^2.2.1",

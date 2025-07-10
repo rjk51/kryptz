@@ -16,15 +16,63 @@ contract CreatureNFT is
 {
     uint256 private _tokenIdCounter;
 
+    // On-chain XP, Level, and trait storage
+    mapping(uint256 => uint256) private _xp;
+    mapping(uint256 => uint256) private _level;
+    mapping(uint256 => uint256) private _power;
+    mapping(uint256 => uint256) private _speed;
+    mapping(uint256 => uint256) private _defense;
+    mapping(uint256 => uint256) private _intelligence;
+
+    event XPAdded(uint256 indexed tokenId, uint256 amount, uint256 newXP);
+    event LevelUp(uint256 indexed tokenId, uint256 newLevel);
+
     constructor(
         address initialOwner
     ) ERC721("CreatureNFT", "CRTR") Ownable(initialOwner) {}
 
-    function mintCreature(address to, string memory uri) public {
+    function mintCreature(
+        address to,
+        string memory uri,
+        uint256 powerInit,
+        uint256 speedInit,
+        uint256 defenseInit,
+        uint256 intelligenceInit
+    ) public {
         uint256 tokenId = _tokenIdCounter;
         _tokenIdCounter++;
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
+        _level[tokenId] = 1;
+        _xp[tokenId] = 0;
+        _power[tokenId] = powerInit;
+        _speed[tokenId] = speedInit;
+        _defense[tokenId] = defenseInit;
+        _intelligence[tokenId] = intelligenceInit;
+    }
+    // Train a trait (only owner, multi-train supported)
+    function trainTrait(uint256 tokenId, string memory trait, uint256 amount) public {
+        require(ownerOf(tokenId) == msg.sender, "Not the owner");
+        require(amount > 0, "Amount must be > 0");
+        bytes32 traitHash = keccak256(bytes(trait));
+        if (traitHash == keccak256("Power")) {
+            _power[tokenId] += amount;
+        } else if (traitHash == keccak256("Speed")) {
+            _speed[tokenId] += amount;
+        } else if (traitHash == keccak256("Defense")) {
+            _defense[tokenId] += amount;
+        } else if (traitHash == keccak256("Intelligence")) {
+            _intelligence[tokenId] += amount;
+        } else {
+            revert("Invalid trait");
+        }
+    }
+
+    function getTraits(uint256 tokenId) public view returns (uint256 power, uint256 speed, uint256 defense, uint256 intelligence) {
+        power = _power[tokenId];
+        speed = _speed[tokenId];
+        defense = _defense[tokenId];
+        intelligence = _intelligence[tokenId];
     }
 
     function mintFirstCreature() public {
@@ -36,6 +84,37 @@ contract CreatureNFT is
         _tokenIdCounter++;
         _safeMint(msg.sender, tokenId);
         _setTokenURI(tokenId, uri);
+        _level[tokenId] = 1;
+        _xp[tokenId] = 0;
+    }
+
+    // Add XP and handle level up (anyone can call)
+    function addXP(uint256 tokenId, uint256 amount) public {
+        require(_ownerOf(tokenId) != address(0), "Nonexistent token");
+        require(ownerOf(tokenId) == msg.sender, "Not the owner");
+        _xp[tokenId] += amount;
+        // Level up for every 100 * currentLevel XP
+        while (_xp[tokenId] >= xpToNextLevel(_level[tokenId])) {
+            _xp[tokenId] -= xpToNextLevel(_level[tokenId]);
+            _level[tokenId] += 1;
+            emit LevelUp(tokenId, _level[tokenId]);
+        }
+        emit XPAdded(tokenId, amount, _xp[tokenId]);
+    }
+
+    // XP required for next level
+    function xpToNextLevel(uint256 currentLevel) public pure returns (uint256) {
+        return 100 * currentLevel;
+    }
+
+    function getXP(uint256 tokenId) public view returns (uint256) {
+        require(_ownerOf(tokenId) != address(0), "Nonexistent token");
+        return _xp[tokenId];
+    }
+
+    function getLevel(uint256 tokenId) public view returns (uint256) {
+        require(_ownerOf(tokenId) != address(0), "Nonexistent token");
+        return _level[tokenId];
     }
 
     // Required overrides
