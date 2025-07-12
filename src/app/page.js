@@ -8,7 +8,6 @@ import { MarketplaceContent } from "./marketplace/marketplace";
 import { ProfileContent } from "./profile/profile";
 import { getOrCreateUser } from "@/lib/supabase/userService";
 import { useAccount } from "wagmi";
-import { battleGameABI, battleGameAddress } from "../lib/battleABI";
 
 export default function Home() {
   const [selectedTab, setSelectedTab] = useState("home");

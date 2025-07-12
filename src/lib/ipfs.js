@@ -1,27 +1,20 @@
-// 📁 src/lib/ipfs.js
-
-export async function uploadToPinata(metadata, pinataJWT, gateway) {
-  const url = `https://${gateway}/pinning/pinJSONToIPFS`;
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${pinataJWT}`,
-    },
-    body: JSON.stringify({
-      pinataMetadata: {
-        name: metadata.name,
+export async function uploadToPinata(metadata) {
+  // Call the Next.js API route to upload metadata to Pinata
+  try {
+    const response = await fetch("/api/pinata-upload", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-      pinataContent: metadata,
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Pinata upload failed: ${errText}`);
+      body: JSON.stringify({ metadata }),
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Pinata upload failed: ${errText}`);
+    }
+    const data = await response.json();
+    return data.gatewayUrl;
+  } catch (error) {
+    throw new Error("Failed to upload to Pinata: " + (error?.message || error));
   }
-
-  const result = await res.json();
-  return `ipfs://${result.IpfsHash}`;
 }
