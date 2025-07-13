@@ -5,11 +5,11 @@ import { getAddress } from "ethers";
 import { isAddress } from "ethers";
 import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
-import { battleGameABI, battleGameAddress } from "../lib/battleABI";
-import { creatureABI, creatureAddress } from "../lib/creatureABI";
+import { battleGameABI, battleGameAddress } from "../../lib/battleABI";
+import { creatureABI, creatureAddress } from "../../lib/creatureABI";
 import { BrowserProvider, Contract } from "ethers";
 
-export default function BattleContent() {
+export function BattleContents() {
   const { address, isConnected } = useAccount();
   const [opponent, setOpponent] = useState("");
   const [myCreatureId, setMyCreatureId] = useState("");
@@ -91,7 +91,7 @@ export default function BattleContent() {
   async function loadBattleState(id) {
     const provider = new BrowserProvider(window.ethereum);
     const contract = new Contract(battleGameAddress, battleGameABI, provider);
-    const battle = await contract.getBattleState(id);
+    const battle = await contract.getBattle(id);
     setBattleData(battle);
   }
 

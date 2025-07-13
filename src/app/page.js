@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { HomeContent } from "./home/home";
 import { CreaturesContent } from "./creatures/creatures";
-import { BattleContent } from "./battle/battle";
+import { BattleContents } from "./battle/BattleContent";
 import { MarketplaceContent } from "./marketplace/marketplace";
 import { ProfileContent } from "./profile/profile";
 import { getOrCreateUser } from "@/lib/supabase/userService";
@@ -86,7 +86,7 @@ export default function Home() {
         <div className="bg-opacity-75">
           {selectedTab === "home" && <HomeContent />}
           {selectedTab === "creatures" && <CreaturesContent />}
-          {selectedTab === "battle" && <BattleContent />}
+          {selectedTab === "battle" && <BattleContents />}
           {selectedTab === "marketplace" && <MarketplaceContent />}
           {selectedTab === "profile" && <ProfileContent user={user} />}
         </div>
