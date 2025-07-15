@@ -91,3 +91,13 @@ export async function addXp(wallet, addXp) {
   if (updateError) throw updateError;
   return updatedUser;
 }
+
+export async function getUserProgress(wallet) {
+  const { data, error } = await supabase
+    .from("users")
+    .select("battlesWon, creaturesTrained, creaturesCollected, marketplaceVisited")
+    .eq("wallet", wallet)
+    .single();
+  if (error) throw error;
+  return data;
+}

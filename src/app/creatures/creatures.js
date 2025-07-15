@@ -3,8 +3,9 @@ import { useAccount } from "wagmi";
 import { BrowserProvider, Contract } from "ethers";
 import { creaturesData } from "../../../creaturesData.js";
 import { uploadToPinata } from "@/lib/ipfs";
+import { updateUserProgress } from "@/lib/supabase/updateUserProgress";
 
-export function CreaturesContent() {
+export function CreaturesContent({ onProgressUpdate }) {
     const { isConnected, address } = useAccount();
     const [userCreatures, setUserCreatures] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -190,6 +191,7 @@ export function CreaturesContent() {
         );
         await tx.wait();
         setMintStatus("Creature minted! Updating your collection...");
+        await updateUserProgress(address, "creaturesCollected");
         setTimeout(fetchCreatures, 3000);
       } catch (err) {
         console.error("Mint failed: ", err);
@@ -377,16 +379,16 @@ export function CreaturesContent() {
                     >
                       TRAIN
                     </button>
-        {/* No Token Modal */}
-        {noTokenModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-70 flex flex-col items-center justify-center z-50">
-            <div className="nes-container is-dark is-rounded w-full max-w-xs p-4 text-center">
-              <p className="text-error text-lg mb-2">No Training Tokens</p>
-              <p className="text-white text-sm mb-4">You don't have any training tokens left for today.<br/>Come back tomorrow for more!</p>
-              <button className="nes-btn is-primary w-full" onClick={() => setNoTokenModal(false)}>OK</button>
-            </div>
-          </div>
-        )}
+                    {/* No Token Modal */}
+                    {noTokenModal && (
+                      <div className="fixed inset-0 bg-black bg-opacity-70 flex flex-col items-center justify-center z-50">
+                        <div className="nes-container is-dark is-rounded w-full max-w-xs p-4 text-center">
+                          <p className="text-error text-lg mb-2">No Training Tokens</p>
+                          <p className="text-white text-sm mb-4">You don't have any training tokens left for today.<br/>Come back tomorrow for more!</p>
+                          <button className="nes-btn is-primary w-full" onClick={() => setNoTokenModal(false)}>OK</button>
+                        </div>
+                      </div>
+                    )}
                     <button className="nes-btn is-warning w-full text-xs">
                       EVOLVE
                     </button>
@@ -467,6 +469,9 @@ export function CreaturesContent() {
                         });
                         setUserTokens(t => t - 1);
                         totalTokensUsed++;
+                        // Update quest progress for training a creature
+                        await updateUserProgress(address, "creaturesTrained");
+                        if (onProgressUpdate) onProgressUpdate();
                       }
                     }
                     // Add XP for user (5 XP per token used)

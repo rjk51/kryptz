@@ -6,8 +6,10 @@ import { CreaturesContent } from "./creatures/creatures";
 import { BattleContents } from "./battle/BattleContent";
 import { MarketplaceContent } from "./marketplace/marketplace";
 import { ProfileContent } from "./profile/profile";
+import { QuestsContent } from "./quests/QuestsContent";
 import { getOrCreateUser } from "@/lib/supabase/userService";
 import { useAccount } from "wagmi";
+import { getUserProgress } from "@/lib/supabase/userService";
 
 export default function Home() {
   const [selectedTab, setSelectedTab] = useState("home");
@@ -25,6 +27,12 @@ export default function Home() {
       setUser(null);
     }
   }, [isConnected, address]);
+
+  async function refreshProgress() {
+    if (!address) return;
+    // Optionally, you can store this in a state if you want to use it elsewhere
+    await getUserProgress(address);
+  }
 
   return (
     <div className="min-h-screen">
@@ -66,6 +74,7 @@ export default function Home() {
             { id: "battle", label: "BATTLE", icon: "⚔️" },
             { id: "marketplace", label: "MARKET", icon: "🏪" },
             { id: "profile", label: "PROFILE", icon: "👤" },
+            { id: "quests", label: "QUESTS", icon: "🎯" },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -85,10 +94,26 @@ export default function Home() {
       <main className="nes-container is-dark is-rounded p-4">
         <div className="bg-opacity-75">
           {selectedTab === "home" && <HomeContent />}
-          {selectedTab === "creatures" && <CreaturesContent />}
+          {selectedTab === "creatures" && <CreaturesContent onProgressUpdate={refreshProgress} />}
           {selectedTab === "battle" && <BattleContents />}
           {selectedTab === "marketplace" && <MarketplaceContent />}
           {selectedTab === "profile" && <ProfileContent user={user} />}
+          {selectedTab === "quests" && <QuestsContent user={user} onQuestComplete={async (quest) => {
+            // Grant XP and tokens via API
+            if (!user) return;
+            await fetch("/api/profile", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ wallet: user.wallet, addXp: quest.xp })
+            });
+            for (let i = 0; i < quest.tokens; i++) {
+              await fetch("/api/useTrainingToken", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ wallet: user.wallet })
+              });
+            }
+          }} />}
         </div>
       </main>
 

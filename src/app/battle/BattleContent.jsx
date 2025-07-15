@@ -8,6 +8,7 @@ import { useAccount } from "wagmi";
 import { battleGameABI, battleGameAddress } from "../../lib/battleABI";
 import { creatureABI, creatureAddress } from "../../lib/creatureABI";
 import { BrowserProvider, Contract } from "ethers";
+import { updateUserProgress } from "@/lib/supabase/updateUserProgress";
 
 export function BattleContents() {
   const { address, isConnected } = useAccount();
@@ -103,6 +104,10 @@ export function BattleContents() {
       const tx = await contract.playTurn(battleId);
       await tx.wait();
       loadBattleState(battleId);
+      // Update quest progress for winning a battle
+      if (address) {
+        await updateUserProgress(address, "battlesWon");
+      }
     } catch (err) {
       alert("Error playing turn: " + err.message);
     }
