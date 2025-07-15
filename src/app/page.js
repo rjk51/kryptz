@@ -6,6 +6,7 @@ import { CreaturesContent } from "./creatures/creatures";
 import { BattleContents } from "./battle/BattleContent";
 import { MarketplaceContent } from "./marketplace/marketplace";
 import { ProfileContent } from "./profile/profile";
+import { BreedSection } from "../components/BreedSection"; // ✅ IMPORTED BREED SECTION
 import { getOrCreateUser } from "@/lib/supabase/userService";
 import { useAccount } from "wagmi";
 
@@ -64,6 +65,7 @@ export default function Home() {
             { id: "home", label: "HOME", icon: "🏠" },
             { id: "creatures", label: "CREATURES", icon: "🐉" },
             { id: "battle", label: "BATTLE", icon: "⚔️" },
+            { id: "breed", label: "BREED", icon: "🧬" }, // ✅ Added BREED tab
             { id: "marketplace", label: "MARKET", icon: "🏪" },
             { id: "profile", label: "PROFILE", icon: "👤" },
           ].map((tab) => (
@@ -87,6 +89,7 @@ export default function Home() {
           {selectedTab === "home" && <HomeContent />}
           {selectedTab === "creatures" && <CreaturesContent />}
           {selectedTab === "battle" && <BattleContents />}
+          {selectedTab === "breed" && <BreedSection />} {/* ✅ Rendered BreedSection */}
           {selectedTab === "marketplace" && <MarketplaceContent />}
           {selectedTab === "profile" && <ProfileContent user={user} />}
         </div>
