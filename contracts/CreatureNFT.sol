@@ -16,20 +16,22 @@ contract CreatureNFT is
 {
     uint256 private _tokenIdCounter;
 
-    // On-chain XP, Level, and trait storage
     mapping(uint256 => uint256) private _xp;
     mapping(uint256 => uint256) private _level;
     mapping(uint256 => uint256) private _power;
     mapping(uint256 => uint256) private _speed;
     mapping(uint256 => uint256) private _defense;
     mapping(uint256 => uint256) private _intelligence;
+    mapping(uint256 => string) public rarity;
+    mapping(uint256 => uint256) public lastBredAt;
+
+    uint256 public breedingCooldown = 1 minutes; 
 
     event XPAdded(uint256 indexed tokenId, uint256 amount, uint256 newXP);
     event LevelUp(uint256 indexed tokenId, uint256 newLevel);
+    event CreatureBred(uint256 indexed parent1, uint256 indexed parent2, uint256 newTokenId);
 
-    constructor(
-        address initialOwner
-    ) ERC721("CreatureNFT", "CRTR") Ownable(initialOwner) {}
+    constructor(address initialOwner) ERC721("CreatureNFT", "CRTR") Ownable(initialOwner) {}
 
     function mintCreature(
         address to,
@@ -37,10 +39,10 @@ contract CreatureNFT is
         uint256 powerInit,
         uint256 speedInit,
         uint256 defenseInit,
-        uint256 intelligenceInit
+        uint256 intelligenceInit,
+        string memory rarityLevel
     ) public {
-        uint256 tokenId = _tokenIdCounter;
-        _tokenIdCounter++;
+        uint256 tokenId = _tokenIdCounter++;
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
         _level[tokenId] = 1;
@@ -49,8 +51,9 @@ contract CreatureNFT is
         _speed[tokenId] = speedInit;
         _defense[tokenId] = defenseInit;
         _intelligence[tokenId] = intelligenceInit;
+        rarity[tokenId] = rarityLevel;
     }
-    // Train a trait (only owner, multi-train supported)
+
     function trainTrait(uint256 tokenId, string memory trait, uint256 amount) public {
         require(ownerOf(tokenId) == msg.sender, "Not the owner");
         require(amount > 0, "Amount must be > 0");
@@ -78,31 +81,33 @@ contract CreatureNFT is
     function mintFirstCreature() public {
         require(balanceOf(msg.sender) == 0, "You already own a creature");
 
-        string
-            memory uri = "https://moccasin-big-baboon-110.mypinata.cloud/ipfs/bafkreicdjndqlnf2cusekgqawx7kiug7nvxc5sbv2viv4pt72b3ladxkgm";
-        uint256 tokenId = _tokenIdCounter;
-        _tokenIdCounter++;
+        string memory uri = "https://example.com/default-creature.json";
+        uint256 tokenId = _tokenIdCounter++;
         _safeMint(msg.sender, tokenId);
         _setTokenURI(tokenId, uri);
         _level[tokenId] = 1;
         _xp[tokenId] = 0;
+        _power[tokenId] = 50;
+        _speed[tokenId] = 50;
+        _defense[tokenId] = 50;
+        _intelligence[tokenId] = 50;
+        rarity[tokenId] = "Common";
     }
 
-    // Add XP and handle level up (anyone can call)
     function addXP(uint256 tokenId, uint256 amount) public {
         require(_ownerOf(tokenId) != address(0), "Nonexistent token");
         require(ownerOf(tokenId) == msg.sender, "Not the owner");
         _xp[tokenId] += amount;
-        // Level up for every 100 * currentLevel XP
+
         while (_xp[tokenId] >= xpToNextLevel(_level[tokenId])) {
             _xp[tokenId] -= xpToNextLevel(_level[tokenId]);
             _level[tokenId] += 1;
             emit LevelUp(tokenId, _level[tokenId]);
         }
+
         emit XPAdded(tokenId, amount, _xp[tokenId]);
     }
 
-    // XP required for next level
     function xpToNextLevel(uint256 currentLevel) public pure returns (uint256) {
         return 100 * currentLevel;
     }
@@ -117,7 +122,31 @@ contract CreatureNFT is
         return _level[tokenId];
     }
 
-    // Required overrides
+    function breedCreatures(
+        uint256 parent1,
+        uint256 parent2,
+        string memory newURI,
+        string memory rarityLevel
+    ) public {
+        require(ownerOf(parent1) == msg.sender && ownerOf(parent2) == msg.sender, "You must own both parents");
+        require(parent1 != parent2, "Cannot breed a creature with itself");
+        require(block.timestamp >= lastBredAt[parent1] + breedingCooldown, "Parent 1 still on cooldown");
+        require(block.timestamp >= lastBredAt[parent2] + breedingCooldown, "Parent 2 still on cooldown");
+
+        uint256 newPower = (_power[parent1] + _power[parent2]) / 2;
+        uint256 newSpeed = (_speed[parent1] + _speed[parent2]) / 2;
+        uint256 newDefense = (_defense[parent1] + _defense[parent2]) / 2;
+        uint256 newIntelligence = (_intelligence[parent1] + _intelligence[parent2]) / 2;
+
+        mintCreature(msg.sender, newURI, newPower, newSpeed, newDefense, newIntelligence, rarityLevel);
+
+        uint256 newId = _tokenIdCounter - 1;
+        lastBredAt[parent1] = block.timestamp;
+        lastBredAt[parent2] = block.timestamp;
+
+        emit CreatureBred(parent1, parent2, newId);
+    }
+
     function _update(
         address to,
         uint256 tokenId,
@@ -141,12 +170,7 @@ contract CreatureNFT is
 
     function supportsInterface(
         bytes4 interfaceId
-    )
-        public
-        view
-        override(ERC721, ERC721Enumerable, ERC721URIStorage)
-        returns (bool)
-    {
+    ) public view override(ERC721, ERC721Enumerable, ERC721URIStorage) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 

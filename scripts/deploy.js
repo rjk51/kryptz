@@ -5,18 +5,14 @@ async function main() {
 
   console.log("Deploying contracts with:", deployer.address);
 
+  // ✅ Deploy CreatureNFT with deployer's address as initial owner
   const CreatureNFT = await hre.ethers.getContractFactory("CreatureNFT");
-  const creatureNFT = await CreatureNFT.deploy(deployer.address);
-  await creatureNFT.waitForDeployment();
-  console.log("✅ CreatureNFT deployed at:", await creatureNFT.getAddress());
-
-  const BattleGame = await hre.ethers.getContractFactory("BattleGame");
-  const battleGame = await BattleGame.deploy();
-  await battleGame.waitForDeployment();
-  console.log("✅ BattleGame deployed at:", await battleGame.getAddress());
+  const creature = await CreatureNFT.deploy(deployer.address);
+  await creature.waitForDeployment();
+  console.log("✅ CreatureNFT deployed to:", await creature.getAddress());
 }
 
 main().catch((error) => {
-  console.error(error);
+  console.error("❌ Deployment failed:", error);
   process.exitCode = 1;
 });
