@@ -1,4 +1,3 @@
-
 import { supabase } from './supabaseClient';
 
 // Decrement training tokens for a user
@@ -98,6 +97,16 @@ export async function getUserProgress(wallet) {
     .select("battlesWon, creaturesTrained, creaturesCollected, marketplaceVisited")
     .eq("wallet", wallet)
     .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function addXpAndTokens(wallet, xp, tokens) {
+  const { data, error } = await supabase.rpc('add_xp_and_tokens', {
+    user_wallet: wallet,
+    xp_to_add: xp,
+    tokens_to_add: tokens,
+  });
   if (error) throw error;
   return data;
 }
