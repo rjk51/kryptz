@@ -1,9 +1,24 @@
 "use client";
-import { getAddress, isAddress, BrowserProvider, Contract } from "ethers";
+import {
+  getAddress,
+  isAddress,
+  Contract,
+  BrowserProvider
+} from "ethers";
+import { ethers } from "ethers";
 import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 import { battleGameABI, battleGameAddress } from "../lib/battleABI";
-import { creatureABI, creatureAddress } from "../lib/creatureABI";
+import { creatureABI } from "../lib/creatureABI";
+
+const creatureAddress = "0x74c1444D2Dc18433514883A39BBEda3C9815593f";
+
+// Convert IPFS URI to HTTP gateway URL
+function ipfsToHttp(uri) {
+  return uri.startsWith("ipfs://")
+    ? `https://ipfs.io/ipfs/${uri.slice(7)}`
+    : uri;
+}
 
 export function ManualBattleSection() {
   const { address, isConnected } = useAccount();
@@ -12,6 +27,8 @@ export function ManualBattleSection() {
   const [battleId, setBattleId] = useState(null);
   const [battleData, setBattleData] = useState(null);
   const [myCreatures, setMyCreatures] = useState([]);
+  const [myCreature, setMyCreature] = useState(null); // Store selected creature metadata
+  const [opponentCreatureId, setOpponentCreatureId] = useState("");
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
 
@@ -21,16 +38,27 @@ export function ManualBattleSection() {
 
   async function loadMyCreatures() {
     try {
-      const provider = new BrowserProvider(window.ethereum);
+      if (!address) return;
+
+      const provider = new ethers.JsonRpcProvider("https://rpc.test2.btcs.network");
       const contract = new Contract(creatureAddress, creatureABI, provider);
+
       const balance = await contract.balanceOf(address);
       const count = Number(balance);
-
       const ids = [];
+
       for (let i = 0; i < count; i++) {
         const id = await contract.tokenOfOwnerByIndex(address, i);
-        ids.push(id.toString());
+        const uri = await contract.tokenURI(id);
+        const metadataRes = await fetch(ipfsToHttp(uri));
+        const metadata = await metadataRes.json();
+        ids.push({
+          id: id.toString(),
+          name: metadata.name || `Creature #${id}`,
+          image: metadata.image ? ipfsToHttp(metadata.image) : '/globe.svg',
+        });
       }
+
       setMyCreatures(ids);
     } catch (err) {
       console.error("Error loading creatures:", err);
@@ -38,13 +66,13 @@ export function ManualBattleSection() {
   }
 
   async function handleInitiateBattle() {
-    if (!myCreatureId || !opponent) return;
+    if (!myCreatureId || !opponent || !opponentCreatureId) return;
     if (!isAddress(opponent)) return alert("❌ Invalid opponent address!");
 
     let checksummedOpponent;
     try {
       checksummedOpponent = getAddress(opponent);
-    } catch (err) {
+    } catch {
       return alert("❌ Invalid address format!");
     }
 
@@ -61,7 +89,7 @@ export function ManualBattleSection() {
         0,
         100,
         25,
-        999,
+        opponentCreatureId,
         1,
         100,
         20
@@ -80,11 +108,36 @@ export function ManualBattleSection() {
     }
   }
 
+  const [opponentCreature, setOpponentCreature] = useState(null);
+
   async function loadBattleState(id) {
     const provider = new BrowserProvider(window.ethereum);
     const contract = new Contract(battleGameAddress, battleGameABI, provider);
     const battle = await contract.getBattle(id);
     setBattleData(battle);
+    // Fetch opponent's creature details using opponent's address and creature ID
+    try {
+      const opponentAddress = battle.opponent || battle.player2 || null;
+      const opponentCreatureId = battle.creature2.id?.toString?.() || battle.creature2.id;
+      if (opponentAddress && opponentCreatureId && opponentCreatureId !== "0" && opponentCreatureId !== "999") {
+        const creatureProvider = new ethers.JsonRpcProvider("https://rpc.test2.btcs.network");
+        const creatureContract = new Contract(creatureAddress, creatureABI, creatureProvider);
+        // Fetch the tokenURI for the opponent's creature
+        const uri = await creatureContract.tokenURI(opponentCreatureId);
+        const metadataRes = await fetch(ipfsToHttp(uri));
+        const metadata = await metadataRes.json();
+        setOpponentCreature({
+          id: opponentCreatureId,
+          name: metadata.name || `Creature #${opponentCreatureId}`,
+          image: metadata.image ? ipfsToHttp(metadata.image) : '/globe.svg',
+          address: opponentAddress,
+        });
+      } else {
+        setOpponentCreature(null);
+      }
+    } catch (err) {
+      setOpponentCreature(null);
+    }
   }
 
   async function handlePlayTurn() {
@@ -100,6 +153,16 @@ export function ManualBattleSection() {
     }
   }
 
+  // Track selected myCreatureId and set myCreature metadata
+  useEffect(() => {
+    if (myCreatureId && myCreatures.length > 0) {
+      const found = myCreatures.find((c) => c.id === myCreatureId);
+      setMyCreature(found || null);
+    } else {
+      setMyCreature(null);
+    }
+  }, [myCreatureId, myCreatures]);
+
   useEffect(() => {
     if (battleId !== null) {
       loadBattleState(battleId);
@@ -114,9 +177,9 @@ export function ManualBattleSection() {
           onChange={(e) => setMyCreatureId(e.target.value)}
         >
           <option value="">Choose Your Creature</option>
-          {myCreatures.map((id) => (
+          {myCreatures.map(({ id, name }) => (
             <option key={id} value={id}>
-              Creature #{id}
+              {name}
             </option>
           ))}
         </select>
@@ -126,6 +189,12 @@ export function ManualBattleSection() {
           value={opponent}
           onChange={(e) => setOpponent(e.target.value)}
         />
+        <input
+          className="nes-input"
+          placeholder="Opponent Creature ID"
+          value={opponentCreatureId}
+          onChange={(e) => setOpponentCreatureId(e.target.value)}
+        />
         <button
           className={`nes-btn is-warning ${loading ? "is-disabled" : ""}`}
           onClick={handleInitiateBattle}
@@ -133,6 +202,7 @@ export function ManualBattleSection() {
           START BATTLE
         </button>
       </div>
+
       {status && <p className="text-success text-xs">{status}</p>}
 
       {battleData && (
@@ -145,13 +215,79 @@ export function ManualBattleSection() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <h4 className="text-warning">YOU</h4>
-                <p>ID: {battleData.creature1.id.toString()}</p>
-                <p>HP: {battleData.creature1.hp.toString()}</p>
+                {myCreature ? (
+                  <>
+                    <img
+                      src={myCreature.image}
+                      alt={myCreature.name}
+                      style={{ width: 120, height: 120, marginBottom: 8, borderRadius: 12, objectFit: 'contain', background: '#333', border: '4px solid #fff', boxShadow: '0 0 12px #fff', transition: 'all 0.3s' }}
+                    />
+                    <p style={{ color: '#fff', fontWeight: 'bold', fontSize: 14, marginBottom: 4 }}>{myCreature.name}</p>
+                  </>
+                ) : (
+                  <p>ID: {battleData.creature1.id.toString()}</p>
+                )}
+                {/* HP Bar for YOU */}
+                <div style={{ margin: '8px 0 4px 0', width: 120 }}>
+                  <div style={{
+                    background: '#222',
+                    borderRadius: 6,
+                    height: 16,
+                    width: '100%',
+                    border: '1px solid #555',
+                    overflow: 'hidden',
+                  }}>
+                    <div style={{
+                      height: '100%',
+                      width: `${Math.max(0, Math.min(100, (Number(battleData.creature1.hp) / 100) * 100))}%`,
+                      background: 'linear-gradient(90deg, #4caf50, #8bc34a)',
+                      transition: 'width 0.3s',
+                    }} />
+                  </div>
+                  <span style={{ color: '#fff', fontSize: 12 }}>HP: {battleData.creature1.hp.toString()}</span>
+                </div>
               </div>
               <div>
                 <h4 className="text-error">OPPONENT</h4>
-                <p>ID: {battleData.creature2.id.toString()}</p>
-                <p>HP: {battleData.creature2.hp.toString()}</p>
+                {opponentCreature ? (
+                  <>
+                    <img
+                      src={opponentCreature.image}
+                      alt={opponentCreature.name}
+                      style={{ width: 120, height: 120, marginBottom: 8, borderRadius: 12, objectFit: 'contain', background: '#333', border: '4px solid #fff', boxShadow: '0 0 12px #fff', transition: 'all 0.3s' }}
+                    />
+                    <p style={{ color: '#fff', fontWeight: 'bold', fontSize: 14, marginBottom: 4 }}>{opponentCreature.name}</p>
+                    <p style={{ color: '#aaa', fontSize: 12, wordBreak: 'break-all' }}>Address: {opponentCreature.address}</p>
+                  </>
+                ) : (
+                  <>
+                    <img
+                      src={'/globe.svg'}
+                      alt="Opponent Creature"
+                      style={{ width: 120, height: 120, marginBottom: 8, borderRadius: 12, objectFit: 'contain', background: '#333', border: '4px solid #fff', boxShadow: '0 0 12px #fff', transition: 'all 0.3s' }}
+                    />
+                    <p>ID: {battleData.creature2.id.toString()}</p>
+                  </>
+                )}
+                {/* HP Bar for OPPONENT */}
+                <div style={{ margin: '8px 0 4px 0', width: 120 }}>
+                  <div style={{
+                    background: '#222',
+                    borderRadius: 6,
+                    height: 16,
+                    width: '100%',
+                    border: '1px solid #555',
+                    overflow: 'hidden',
+                  }}>
+                    <div style={{
+                      height: '100%',
+                      width: `${Math.max(0, Math.min(100, (Number(battleData.creature2.hp) / 100) * 100))}%`,
+                      background: 'linear-gradient(90deg, #f44336, #ff9800)',
+                      transition: 'width 0.3s',
+                    }} />
+                  </div>
+                  <span style={{ color: '#fff', fontSize: 12 }}>HP: {battleData.creature2.hp.toString()}</span>
+                </div>
               </div>
             </div>
             {!battleData.state.toString().includes("2") ? (
