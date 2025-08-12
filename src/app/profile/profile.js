@@ -5,6 +5,11 @@ export function ProfileContent({ user }) {
   const { address, isConnected } = useAccount();
   const [tokens, setTokens] = useState(user?.tokens ?? 0);
   const [xp, setXp] = useState(user?.xp ?? 0);
+  
+  // Calculate level and progress
+  const level = Math.floor(xp / 100) + 1;
+  const currentLevelXp = xp % 100;
+  const xpForNextLevel = 100;
   useEffect(() => {
     async function fetchProfile() {
       if (!address) return;
@@ -50,11 +55,20 @@ export function ProfileContent({ user }) {
                 </div>
                 <div className="flex justify-between">
                   <span>LEVEL:</span>
-                  <span className="text-green-400">{user.level}</span>
+                  <span className="text-green-400">{level}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>XP:</span>
-                  <span className="text-blue-400">{xp}</span>
+                <div className="mb-3">
+                  <div className="flex justify-between text-xs mb-1">
+                    <span>XP TO NEXT LEVEL:</span>
+                    <span className="text-blue-400">{currentLevelXp}/{xpForNextLevel}</span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-2">
+                    <div 
+                      className="bg-blue-400 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${(currentLevelXp / xpForNextLevel) * 100}%` }}
+                    ></div>
+                  </div>
+                  <div className="text-xs text-gray-400 mt-1">Total XP: {xp}</div>
                 </div>
                 <div className="flex justify-between">
                   <span>TRAINING TOKENS:</span>
