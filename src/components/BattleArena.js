@@ -1,5 +1,6 @@
 // src/components/BattleArena.js
 import { useState } from "react";
+import { Matchmaker } from "./MatchmakingSection";
 
 const TYPE_EFFECTIVENESS = {
   fire: { grass: 2, water: 0.5, fire: 1 },
@@ -38,7 +39,16 @@ const BattleArena = ({ player1, player2, onBattleEnd }) => {
     }
   };
 
+
   const isBattleOver = p1HP <= 0 || p2HP <= 0;
+  if (isBattleOver) {
+    if (p1HP > 0) {
+      setLog((prev) => [...prev, `${player1.name} wins!`]);
+    } else {
+      setLog((prev) => [...prev, `${player2.name} wins!`]);
+    }
+    onBattleEnd(p1HP > 0 ? player1 : player2);
+  }
 
   return (
     <div className="p-4 border rounded bg-gray-900 text-white max-w-xl mx-auto">

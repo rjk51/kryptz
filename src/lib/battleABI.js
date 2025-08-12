@@ -2,4 +2,5 @@
 import battleGameArtifact from "./BattleGameABI.json";
 
 export const battleGameABI = battleGameArtifact.abi;
-export const battleGameAddress = "0x557baa12c905C37bF76B94e53aE8904ec61AE5e3";
+export const battleGameAddress = "0x28449397738593644FaDD18Cf4334ECf0B466296";
+

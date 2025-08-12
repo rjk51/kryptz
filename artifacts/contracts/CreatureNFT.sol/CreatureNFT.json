@@ -235,6 +235,31 @@
         {
           "indexed": true,
           "internalType": "uint256",
+          "name": "parent1",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "parent2",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "newTokenId",
+          "type": "uint256"
+        }
+      ],
+      "name": "CreatureBred",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
           "name": "tokenId",
           "type": "uint256"
         },
@@ -400,6 +425,47 @@
         }
       ],
       "name": "balanceOf",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "parent1",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "parent2",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "newURI",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "rarityLevel",
+          "type": "string"
+        }
+      ],
+      "name": "breedCreatures",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "breedingCooldown",
       "outputs": [
         {
           "internalType": "uint256",
@@ -597,6 +663,25 @@
     {
       "inputs": [
         {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "lastBredAt",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "address",
           "name": "to",
           "type": "address"
@@ -625,6 +710,11 @@
           "internalType": "uint256",
           "name": "intelligenceInit",
           "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "rarityLevel",
+          "type": "string"
         }
       ],
       "name": "mintCreature",
@@ -679,6 +769,25 @@
           "internalType": "address",
           "name": "",
           "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "rarity",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
         }
       ],
       "stateMutability": "view",
