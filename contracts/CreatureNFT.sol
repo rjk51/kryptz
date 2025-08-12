@@ -23,9 +23,12 @@ contract CreatureNFT is
     mapping(uint256 => uint256) private _speed;
     mapping(uint256 => uint256) private _defense;
     mapping(uint256 => uint256) private _intelligence;
+    // Evolution stage storage: 1 = base, 2 = evolved
+    mapping(uint256 => uint8) private _evolutionStage;
 
     event XPAdded(uint256 indexed tokenId, uint256 amount, uint256 newXP);
     event LevelUp(uint256 indexed tokenId, uint256 newLevel);
+    event Evolved(uint256 indexed tokenId, uint8 newStage, string newUri);
 
     constructor(
         address initialOwner
@@ -49,6 +52,7 @@ contract CreatureNFT is
         _speed[tokenId] = speedInit;
         _defense[tokenId] = defenseInit;
         _intelligence[tokenId] = intelligenceInit;
+        _evolutionStage[tokenId] = 1;
     }
     // Train a trait (only owner, multi-train supported)
     function trainTrait(uint256 tokenId, string memory trait, uint256 amount) public {
@@ -86,6 +90,7 @@ contract CreatureNFT is
         _setTokenURI(tokenId, uri);
         _level[tokenId] = 1;
         _xp[tokenId] = 0;
+        _evolutionStage[tokenId] = 1;
     }
 
     // Add XP and handle level up (anyone can call)
@@ -116,6 +121,29 @@ contract CreatureNFT is
         require(_ownerOf(tokenId) != address(0), "Nonexistent token");
         return _level[tokenId];
     }
+
+    function getEvolutionStage(uint256 tokenId) public view returns (uint8) {
+        require(_ownerOf(tokenId) != address(0), "Nonexistent token");
+        return _evolutionStage[tokenId];
+    }
+
+    function canEvolve(uint256 tokenId) public view returns (bool) {
+        require(_ownerOf(tokenId) != address(0), "Nonexistent token");
+        return _evolutionStage[tokenId] < 3;
+    }
+
+    // Evolve creature: only owner; updates tokenURI
+    function evolve(uint256 tokenId, string memory newUri) public {
+        require(_ownerOf(tokenId) != address(0), "Nonexistent token");
+        require(ownerOf(tokenId) == msg.sender, "Not the owner");
+        require(_evolutionStage[tokenId] < 3, "Max evolution reached");
+        uint8 newStage = _evolutionStage[tokenId] + 1;
+        _evolutionStage[tokenId] = newStage;
+        _setTokenURI(tokenId, newUri);
+        emit Evolved(tokenId, newStage, newUri);
+    }
+
+    // Note: On-chain evolve tokens removed; evolution gating by level only.
 
     // Required overrides
     function _update(

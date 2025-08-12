@@ -62,7 +62,7 @@ export async function getOrCreateUser(wallet) {
   // If not found, create
   const { data: newUser, error: insertError } = await supabase
     .from('users')
-    .insert([{ wallet, tokens: 3, lastclaimed: new Date().toISOString(), xp: 0 }])
+    .insert([{ wallet, tokens: 3, lastclaimed: new Date().toISOString(), xp: 0, evolve_tokens: 0 }])
     .select()
     .single();
 
@@ -101,12 +101,71 @@ export async function getUserProgress(wallet) {
   return data;
 }
 
-export async function addXpAndTokens(wallet, xp, tokens) {
-  const { data, error } = await supabase.rpc('add_xp_and_tokens', {
-    user_wallet: wallet,
-    xp_to_add: xp,
-    tokens_to_add: tokens,
-  });
+export async function addXpAndTokens(wallet, xpToAdd, tokensToAdd) {
+  const { data: user, error: fetchError } = await supabase
+    .from('users')
+    .select('xp, tokens')
+    .eq('wallet', wallet)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  const newXp = (user.xp || 0) + xpToAdd;
+  const newTokens = (user.tokens || 0) + tokensToAdd;
+
+  const { data, error } = await supabase
+    .from('users')
+    .update({ xp: newXp, tokens: newTokens })
+    .eq('wallet', wallet);
+
+  if (error) throw error;
+  return data;
+}
+
+// Evolve token helpers
+export async function getEvolveTokens(wallet) {
+  const { data, error } = await supabase
+    .from('users')
+    .select('evolve_tokens')
+    .eq('wallet', wallet)
+    .single();
+  if (error) throw error;
+  return data?.evolve_tokens || 0;
+}
+
+export async function grantEvolveTokens(wallet, amount) {
+  if (!wallet || amount <= 0) throw new Error('Invalid wallet or amount');
+  const { data: user, error: fetchError } = await supabase
+    .from('users')
+    .select('evolve_tokens')
+    .eq('wallet', wallet)
+    .single();
+  if (fetchError) throw fetchError;
+  const newCount = (user?.evolve_tokens || 0) + amount;
+  const { data, error } = await supabase
+    .from('users')
+    .update({ evolve_tokens: newCount })
+    .eq('wallet', wallet)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function useEvolveToken(wallet) {
+  const { data: user, error: fetchError } = await supabase
+    .from('users')
+    .select('evolve_tokens')
+    .eq('wallet', wallet)
+    .single();
+  if (fetchError || !user) throw new Error('User not found');
+  if ((user.evolve_tokens || 0) <= 0) throw new Error('No evolve tokens');
+  const { data, error } = await supabase
+    .from('users')
+    .update({ evolve_tokens: user.evolve_tokens - 1 })
+    .eq('wallet', wallet)
+    .select()
+    .single();
   if (error) throw error;
   return data;
 }

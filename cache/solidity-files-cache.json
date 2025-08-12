@@ -38,8 +38,8 @@
       ]
     },
     "C:\\Projects\\kryptz\\contracts\\CreatureNFT.sol": {
-      "lastModificationDate": 1752171859815,
-      "contentHash": "9d32a03ec35597820a445d53df1dbcd8",
+      "lastModificationDate": 1754756479717,
+      "contentHash": "d154bebcaedf78a316874f0ef73fa924",
       "sourceName": "contracts/CreatureNFT.sol",
       "solcConfig": {
         "version": "0.8.27",

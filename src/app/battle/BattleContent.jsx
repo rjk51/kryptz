@@ -128,10 +128,10 @@ export function BattleContents() {
             className="nes-select"
             onChange={(e) => setMyCreatureId(e.target.value)}
           >
-            <option value="">Choose Your Creature</option>
+            <option value="">Choose Your Zling</option>
             {myCreatures.map((id) => (
               <option key={id} value={id}>
-                Creature #{id}
+                Zling #{id}
               </option>
             ))}
           </select>

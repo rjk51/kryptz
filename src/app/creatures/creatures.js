@@ -11,6 +11,9 @@ export function CreaturesContent({ onProgressUpdate }) {
     const [loading, setLoading] = useState(false);
     const [minting, setMinting] = useState(false);
     const [mintStatus, setMintStatus] = useState("");
+  const [evolving, setEvolving] = useState(false);
+  const [evolveStatus, setEvolveStatus] = useState("");
+  const [noEvolveTokenModal, setNoEvolveTokenModal] = useState(false);
     const [showTraits, setShowTraits] = useState(false);
     const [trainModal, setTrainModal] = useState({ open: false, tokenId: null, traits: { Power: 0, Speed: 0, Defense: 0, Intelligence: 0 } });
     const [noTokenModal, setNoTokenModal] = useState(false);
@@ -27,6 +30,7 @@ export function CreaturesContent({ onProgressUpdate }) {
         const res = await fetch(`/api/profile?wallet=${address}`);
         const data = await res.json();
         setUserTokens(data.tokens || 0);
+        // attach evolve tokens to creatures display enablement by refetching later
       } catch (err) {
         setUserTokens(0);
       }
@@ -39,7 +43,13 @@ export function CreaturesContent({ onProgressUpdate }) {
       "function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)",
       "function tokenURI(uint256 tokenId) view returns (string)",
       "function mintFirstCreature() public",
-      "function mintCreature(address to, string memory uri) public",
+      "function mintCreature(address to, string uri, uint256 powerInit, uint256 speedInit, uint256 defenseInit, uint256 intelligenceInit)",
+      "function getTraits(uint256 tokenId) view returns (uint256,uint256,uint256,uint256)",
+      "function getLevel(uint256 tokenId) view returns (uint256)",
+      "function getEvolutionStage(uint256 tokenId) view returns (uint8)",
+      "function trainTrait(uint256 tokenId, string trait, uint256 amount)",
+      "function addXP(uint256 tokenId, uint256 amount)",
+      "function evolve(uint256 tokenId, string newUri)",
     ];
   
     async function fetchCreatures() {
@@ -47,15 +57,18 @@ export function CreaturesContent({ onProgressUpdate }) {
       setLoading(true);
       try {
         const provider = new BrowserProvider(window.ethereum);
-        // Add getTraits ABI
         const contract = new Contract(
           contractAddress,
-          [
-            ...contractABI,
-            "function getTraits(uint256 tokenId) view returns (uint256,uint256,uint256,uint256)"
-          ],
+          contractABI,
           provider
         );
+        // Fetch evolve tokens once per load
+        let evolveTokensGlobal = 0;
+        try {
+          const resTok = await fetch(`/api/evolveToken?wallet=${address}`);
+          const dataTok = await resTok.json();
+          evolveTokensGlobal = dataTok.evolveTokens || 0;
+        } catch {}
         const balance = await contract.balanceOf(address);
         const balanceNum = typeof balance === "bigint" ? Number(balance) : balance;
         const creatureList = [];
@@ -90,22 +103,38 @@ export function CreaturesContent({ onProgressUpdate }) {
           } catch (err) {
             console.error(`Error fetching or parsing metadata for token ${tokenId}:`, err);
           }
-          // Fetch on-chain traits
+          // Fetch on-chain traits and level/evolution
           let power = 0, speed = 0, defense = 0, intelligence = 0;
+          let level = 1, stage = 1, canEvolve = false;
           try {
             [power, speed, defense, intelligence] = await contract.getTraits(tokenId);
           } catch (err) {
             console.error(`Error fetching on-chain traits for token ${tokenId}:`, err);
           }
+          try {
+            level = await contract.getLevel(tokenId);
+          } catch (err) {
+            console.error(`Error fetching on-chain level for token ${tokenId}:`, err);
+          }
+          try {
+            stage = await contract.getEvolutionStage(tokenId);
+          } catch (err) {
+            console.error(`Error fetching evolution stage for token ${tokenId}:`, err);
+          }
+          // Can evolve is now off-chain token gated; allow until max stage (3)
+          canEvolve = Number(stage) < 3;
           // Merge on-chain traits into attributes
           let attributes = meta.attributes || [];
-          // Remove any existing Power/Speed/Defense/Intelligence
-          attributes = attributes.filter(a => !["Power","Speed","Defense","Intelligence"].includes(a.trait_type));
+          // Remove any existing Level/Stage and Power/Speed/Defense/Intelligence
+          attributes = attributes.filter(a => !["Level","Evolution Stage","Power","Speed","Defense","Intelligence"].includes(a.trait_type));
+          attributes.push({ trait_type: "Level", value: Number(level) });
+          attributes.push({ trait_type: "Evolution Stage", value: Number(stage) >= 3 ? "Stage 3" : Number(stage) >= 2 ? "Stage 2" : "Stage 1" });
           attributes.push({ trait_type: "Power", value: Number(power) });
           attributes.push({ trait_type: "Speed", value: Number(speed) });
           attributes.push({ trait_type: "Defense", value: Number(defense) });
           attributes.push({ trait_type: "Intelligence", value: Number(intelligence) });
-          creatureList.push({ id: tokenId.toString(), ...meta, attributes });
+          // attach supabase evolve tokens
+          creatureList.push({ id: tokenId.toString(), level: Number(level), evolutionStage: Number(stage), canEvolve: Boolean(canEvolve), evolveTokens: Number(evolveTokensGlobal), ...meta, attributes });
         }
         setUserCreatures(creatureList);
       } catch (err) {
@@ -207,7 +236,7 @@ export function CreaturesContent({ onProgressUpdate }) {
       // eslint-disable-next-line
     }, [isConnected, address]);
   
-    // Demo creatures (remove when integrating with backend)
+    // Demo zlings (remove when integrating with backend)
     const creatures =
       userCreatures.length > 0
         ? userCreatures
@@ -229,10 +258,10 @@ export function CreaturesContent({ onProgressUpdate }) {
     return (
       <div>
         <div className="nes-container is-dark with-title mb-8">
-          <p className="title text-warning">YOUR CREATURE COLLECTION</p>
+          <p className="title text-warning">YOUR ZLING COLLECTION</p>
           <div className="flex justify-between items-center mb-4">
             <p className="text-sm text-success">
-              Creatures Owned: {userCreatures.length}/∞
+              Zlings Owned: {userCreatures.length}/∞
             </p>
             <div className="flex gap-2 items-center">
               {userCreatures.length > 0 && (
@@ -251,10 +280,10 @@ export function CreaturesContent({ onProgressUpdate }) {
                   onClick={handleMint}
                   disabled={minting}
                 >
-                  {minting ? "MINTING..." : "ADD YOUR FIRST CREATURE"}
+                  {minting ? "MINTING..." : "ADD YOUR FIRST ZLING"}
                 </button>
               ) : (
-                <button className="nes-btn is-primary">CATCH NEW</button>
+                <button className="nes-btn is-primary">CATCH NEW ZLING</button>
               )}
             </div>
           </div>
@@ -262,14 +291,22 @@ export function CreaturesContent({ onProgressUpdate }) {
 
         {userCreatures.length === 0 && isConnected ? (
           <div className="text-center text-warning mb-8">
-            <p>Welcome! Mint your first creature to begin your adventure.</p>
+            <p>Welcome! Mint your first Zling to begin your adventure.</p>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {creatures.map((creature) => (
               <div key={creature.id} className="nes-container is-dark">
                 <div className="text-center">
-                  <div className="w-24 h-24 mx-auto bg-gradient-to-br from-gray-800 to-gray-900 border-4 border-black mb-4 flex items-center justify-center">
+                  <div
+                    className={`w-24 h-24 mx-auto bg-gradient-to-br from-gray-800 to-gray-900 mb-4 flex items-center justify-center relative ${
+                      (Number(creature.evolutionStage) >= 3 || creature.attributes?.find(a=>a.trait_type==='Evolution Stage')?.value === 'Stage 3')
+                        ? 'stage-3-frame'
+                        : (Number(creature.evolutionStage) >= 2 || creature.attributes?.find(a=>a.trait_type==='Evolution Stage')?.value === 'Stage 2')
+                          ? 'stage-2-frame'
+                          : 'border-4 border-black'
+                    }`}
+                  >
                     {creature.image ? (
                       <img
                         src={creature.image.startsWith('ipfs://') ? creature.image.replace('ipfs://', 'https://ipfs.io/ipfs/') : creature.image}
@@ -389,9 +426,108 @@ export function CreaturesContent({ onProgressUpdate }) {
                         </div>
                       </div>
                     )}
-                    <button className="nes-btn is-warning w-full text-xs">
-                      EVOLVE
+                    <button
+                    className={`nes-btn is-warning w-full text-xs ${evolving ? 'is-disabled' : ''}`}
+                      disabled={evolving || Number(creature.evolutionStage) >= 3}
+                      onClick={async () => {
+                        try {
+                          console.log('[EVOLVE] Clicked for token', creature.id, 'tokens:', creature.evolveTokens, 'stage:', creature.evolutionStage);
+                          if (Number(creature.evolutionStage) >= 3) {
+                            alert('Max evolution reached');
+                            return;
+                          }
+                          // Re-check latest token balance from Supabase to avoid stale UI
+                          let latestTokens = Number(creature.evolveTokens) || 0;
+                          try {
+                            const tokRes = await fetch(`/api/evolveToken?wallet=${address}`);
+                            const tokData = await tokRes.json();
+                            latestTokens = tokData.evolveTokens || 0;
+                          } catch (e) { console.warn('Failed to refresh evolve token balance', e); }
+                          if (latestTokens <= 0) { setNoEvolveTokenModal(true); return; }
+                          if (!contractAddress) {
+                            alert('Missing contract address. Set NEXT_PUBLIC_CONTRACT_ADDRESS');
+                            return;
+                          }
+                          setEvolving(true);
+                          setEvolveStatus("Applying evolution boosts...");
+                          const currentStage = Number(creature.evolutionStage) || 1;
+                          const nextStage = Math.min(currentStage + 1, 3);
+                          const nextStageLabel = nextStage === 3 ? 'Stage 3' : 'Stage 2';
+                          const nextFrame = nextStage === 3 ? 'Stage3' : 'Stage2';
+                          // Boost each trait by +10 on-chain before updating metadata
+                          const provider = new BrowserProvider(window.ethereum);
+                          const signer = await provider.getSigner();
+                          const contract = new Contract(contractAddress, contractABI, signer);
+                          for (const traitName of ['Power','Speed','Defense','Intelligence']) {
+                            const txBoost = await contract.trainTrait(creature.id, traitName, 10, { gasLimit: 200000 });
+                            await txBoost.wait();
+                          }
+                          // Fetch updated traits to embed accurate values in metadata
+                          let updatedPower = 0, updatedSpeed = 0, updatedDefense = 0, updatedIntelligence = 0;
+                          try {
+                            [updatedPower, updatedSpeed, updatedDefense, updatedIntelligence] = await contract.getTraits(creature.id);
+                          } catch {}
+                          setEvolveStatus("Preparing evolved metadata...");
+                          // Build evolved metadata by adding a frame hint, updating stage, and injecting updated traits
+                          const baseAttributes = (creature.attributes || []).filter(a => !['Evolution Frame','Power','Speed','Defense','Intelligence'].includes(a.trait_type));
+                          const newAttributes = baseAttributes.map(a => {
+                            if (a.trait_type === 'Evolution Stage') return { ...a, value: nextStageLabel };
+                            if (a.trait_type === 'Level') return { ...a, value: Math.max(Number(creature.level) || 10, 10) };
+                            return a;
+                          });
+                          newAttributes.push({ trait_type: 'Power', value: Number(updatedPower) });
+                          newAttributes.push({ trait_type: 'Speed', value: Number(updatedSpeed) });
+                          newAttributes.push({ trait_type: 'Defense', value: Number(updatedDefense) });
+                          newAttributes.push({ trait_type: 'Intelligence', value: Number(updatedIntelligence) });
+                          newAttributes.push({ trait_type: 'Evolution Frame', value: nextFrame });
+                          const evolvedMetadata = {
+                            name: creature.name,
+                            description: creature.description,
+                            image: creature.image,
+                            external_url: creature.external_url,
+                            attributes: newAttributes,
+                          };
+                          // 2) Upload new metadata to IPFS
+                          setEvolveStatus("Uploading evolved metadata to IPFS...");
+                          const newUri = await uploadToPinata(evolvedMetadata);
+                          // 3) Call contract evolve (using Supabase evolve token)
+                          setEvolveStatus("Submitting evolve transaction...");
+                          const tx = await contract.evolve(creature.id, newUri, { gasLimit: 300000 });
+                          await tx.wait();
+                          // 4) Consume Supabase evolve token AFTER success
+                          try {
+                            const resUse = await fetch('/api/evolveToken', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wallet: address, action: 'use' }) });
+                            if (!resUse.ok) {
+                              const errText = await resUse.text();
+                              console.warn('Evolve token consume failed:', errText);
+                            }
+                          } catch (consumeErr) {
+                            console.warn('Failed to consume evolve token:', consumeErr);
+                          }
+                          setEvolveStatus("Evolved successfully! Updating your collection...");
+                          // Update quests/progress
+                          await updateUserProgress(address, 'creaturesEvolved');
+                          setTimeout(fetchCreatures, 2000);
+                        } catch (err) {
+                          console.error('[EVOLVE] Error:', err);
+                          alert("Evolve failed: " + (err?.reason || err?.message || err));
+                        }
+                        setEvolving(false);
+                        setEvolveStatus("");
+                      }}
+                    >
+                      {evolving ? 'EVOLVING...' : 'EVOLVE'}
                     </button>
+                    {noEvolveTokenModal && (
+                      <div className="fixed inset-0 bg-black bg-opacity-70 flex flex-col items-center justify-center z-50">
+                        <div className="nes-container is-dark is-rounded w-full max-w-xs p-4 text-center">
+                          <p className="text-error text-lg mb-2">No Evolve Tokens</p>
+                          <p className="text-white text-sm mb-4">You need an evolve token to evolve this Zling.</p>
+                          <button className="nes-btn is-primary w-full" onClick={() => setNoEvolveTokenModal(false)}>OK</button>
+                        </div>
+                      </div>
+                    )}
+                    <div className="text-2xs text-gray-400 mt-1">Evolve Tokens: {Number(creature.evolveTokens) || 0}</div>
                   </div>
                 </div>
               </div>
@@ -403,7 +539,7 @@ export function CreaturesContent({ onProgressUpdate }) {
         {trainModal.open && (
           <div className="fixed inset-0 bg-black bg-opacity-70 flex flex-col items-center justify-center z-50">
             <div className="nes-container is-dark is-rounded w-full max-w-sm p-4">
-              <p className="text-warning text-lg mb-2">Train Creature</p>
+              <p className="text-warning text-lg mb-2">Train Zling</p>
               <p className="text-success text-sm mb-2">Select traits to train (tokens left: {userTokens - Object.values(trainModal.traits).reduce((a,b)=>a+b,0)})</p>
               <div className="space-y-3 mb-4">
                 {['Power','Speed','Defense','Intelligence'].map(trait => {
@@ -474,8 +610,14 @@ export function CreaturesContent({ onProgressUpdate }) {
                         if (onProgressUpdate) onProgressUpdate();
                       }
                     }
-                    // Add XP for user (5 XP per token used)
+                    // Add XP on-chain to NFT and to user profile (5 XP per token used)
                     if (totalTokensUsed > 0) {
+                      try {
+                        const addXpTx = await contract.addXP(trainModal.tokenId, totalTokensUsed * 5, { gasLimit: 200000 });
+                        await addXpTx.wait();
+                      } catch (err) {
+                        console.error("Failed to add on-chain XP:", err);
+                      }
                       try {
                         const xpRes = await fetch("/api/profile", {
                           method: "POST",
@@ -511,6 +653,18 @@ export function CreaturesContent({ onProgressUpdate }) {
               </button>
               <button className="nes-btn is-error w-full" onClick={() => setTrainModal({ open: false, tokenId: null, traits: { Power: 0, Speed: 0, Defense: 0, Intelligence: 0 } })}>Cancel</button>
               {errorMsg && <p className="text-error text-xs mt-2">{errorMsg}</p>}
+            </div>
+          </div>
+        )}
+
+        {evolving && (
+          <div className="fixed inset-0 bg-black bg-opacity-70 flex flex-col items-center justify-center z-50">
+            <div className="nes-container is-dark is-rounded">
+              <p className="text-warning text-lg mb-2">Evolution in progress...</p>
+              <p className="text-success text-sm">{evolveStatus}</p>
+              <div className="mt-4 flex justify-center">
+                <i className="nes-icon star is-large animate-spin"></i>
+              </div>
             </div>
           </div>
         )}
