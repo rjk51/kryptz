@@ -168,7 +168,7 @@ export default function Home() {
             { id: "home", label: "HOME", icon: "🏠" },
             { id: "creatures", label: "ZLINGS", icon: "🐉" },
             { id: "battle", label: "BATTLE", icon: "⚔️" },
-            { id: "breed", label: "BREED", icon: "🧬" }, // ✅ Added BREED tab
+
             { id: "marketplace", label: "MARKET", icon: "🏪" },
             { id: "profile", label: "PROFILE", icon: "👤" },
             { id: "quests", label: "QUESTS", icon: "🎯" },
@@ -193,7 +193,7 @@ export default function Home() {
           {selectedTab === "home" && <HomeContent />}
           {selectedTab === "creatures" && <CreaturesContent onProgressUpdate={refreshProgress} />}
           {selectedTab === "battle" && <BattleContents />}
-          {selectedTab === "breed" && <BreedSection />} {/* ✅ Rendered BreedSection */}
+
           {selectedTab === "marketplace" && <MarketplaceContent />}
           {selectedTab === "profile" && <ProfileContent user={user} />}
           {selectedTab === "quests" && <QuestsContent user={user} onQuestComplete={async (quest) => {
