@@ -11,9 +11,9 @@ const pressStart2P = Press_Start_2P({
 });
 
 export const metadata = {
-  title: "Kryptz - NFT Creature Battle Game",
+  title: "Kryptz - NFT Zling Battle Game",
   description:
-    "Collect, train, evolve, and battle dynamic NFT-based creatures on Core blockchain",
+    "Collect, train, evolve, and battle dynamic NFT-based Zlings on Core blockchain",
 };
 
 export default function RootLayout({ children }) {

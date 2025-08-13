@@ -115,3 +115,138 @@ body {
 .nes-text {
   font-family: 'Press Start 2P', monospace !important;
 }
+
+/* Animated flame frames for evolved creatures */
+@keyframes flame-flicker {
+  0%, 100% {
+    box-shadow: 
+      0 0 5px #ffd700,
+      0 0 10px #ffd700,
+      0 0 15px #ff6b35,
+      0 0 20px #ff6b35,
+      inset 0 0 15px rgba(255, 215, 0, 0.1);
+  }
+  25% {
+    box-shadow: 
+      0 0 2px #ffd700,
+      0 0 8px #ffd700,
+      0 0 12px #ff6b35,
+      0 0 18px #ff6b35,
+      inset 0 0 12px rgba(255, 215, 0, 0.15);
+  }
+  50% {
+    box-shadow: 
+      0 0 8px #ffd700,
+      0 0 15px #ffd700,
+      0 0 20px #ff6b35,
+      0 0 25px #ff6b35,
+      inset 0 0 20px rgba(255, 215, 0, 0.05);
+  }
+  75% {
+    box-shadow: 
+      0 0 3px #ffd700,
+      0 0 12px #ffd700,
+      0 0 16px #ff6b35,
+      0 0 22px #ff6b35,
+      inset 0 0 18px rgba(255, 215, 0, 0.12);
+  }
+}
+
+@keyframes inferno-flicker {
+  0%, 100% {
+    box-shadow: 
+      0 0 8px #ff4500,
+      0 0 16px #ff4500,
+      0 0 24px #ff1493,
+      0 0 32px #ff1493,
+      0 0 40px #8a2be2,
+      inset 0 0 20px rgba(255, 69, 0, 0.15);
+  }
+  20% {
+    box-shadow: 
+      0 0 5px #ff4500,
+      0 0 12px #ff4500,
+      0 0 20px #ff1493,
+      0 0 28px #ff1493,
+      0 0 35px #8a2be2,
+      inset 0 0 15px rgba(255, 69, 0, 0.2);
+  }
+  40% {
+    box-shadow: 
+      0 0 10px #ff4500,
+      0 0 20px #ff4500,
+      0 0 30px #ff1493,
+      0 0 40px #ff1493,
+      0 0 50px #8a2be2,
+      inset 0 0 25px rgba(255, 69, 0, 0.1);
+  }
+  60% {
+    box-shadow: 
+      0 0 6px #ff4500,
+      0 0 14px #ff4500,
+      0 0 22px #ff1493,
+      0 0 30px #ff1493,
+      0 0 38px #8a2be2,
+      inset 0 0 18px rgba(255, 69, 0, 0.18);
+  }
+  80% {
+    box-shadow: 
+      0 0 12px #ff4500,
+      0 0 24px #ff4500,
+      0 0 36px #ff1493,
+      0 0 48px #ff1493,
+      0 0 60px #8a2be2,
+      inset 0 0 30px rgba(255, 69, 0, 0.08);
+  }
+}
+
+.stage-2-frame {
+  border: 4px solid #ffd700;
+  animation: flame-flicker 2s ease-in-out infinite;
+  position: relative;
+}
+
+.stage-2-frame::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border: 2px solid rgba(255, 215, 0, 0.3);
+  border-radius: inherit;
+  animation: flame-flicker 2.5s ease-in-out infinite reverse;
+  pointer-events: none;
+}
+
+.stage-3-frame {
+  border: 4px solid #ff4500;
+  animation: inferno-flicker 1.5s ease-in-out infinite;
+  position: relative;
+}
+
+.stage-3-frame::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border: 2px solid rgba(255, 69, 0, 0.4);
+  border-radius: inherit;
+  animation: inferno-flicker 2s ease-in-out infinite reverse;
+  pointer-events: none;
+}
+
+.stage-3-frame::after {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  right: -6px;
+  bottom: -6px;
+  border: 1px solid rgba(138, 43, 226, 0.2);
+  border-radius: inherit;
+  animation: inferno-flicker 3s ease-in-out infinite;
+  pointer-events: none;
+}

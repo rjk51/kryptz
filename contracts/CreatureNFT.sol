@@ -22,13 +22,16 @@ contract CreatureNFT is
     mapping(uint256 => uint256) private _speed;
     mapping(uint256 => uint256) private _defense;
     mapping(uint256 => uint256) private _intelligence;
+    // Evolution stage storage: 1 = base, 2 = evolved
+    mapping(uint256 => uint8) private _evolutionStage;
+
+    event XPAdded(uint256 indexed tokenId, uint256 amount, uint256 newXP);
+    event LevelUp(uint256 indexed tokenId, uint256 newLevel);
+    event Evolved(uint256 indexed tokenId, uint8 newStage, string newUri);
     mapping(uint256 => string) public rarity;
     mapping(uint256 => uint256) public lastBredAt;
 
     uint256 public breedingCooldown = 1 minutes; 
-
-    event XPAdded(uint256 indexed tokenId, uint256 amount, uint256 newXP);
-    event LevelUp(uint256 indexed tokenId, uint256 newLevel);
     event CreatureBred(uint256 indexed parent1, uint256 indexed parent2, uint256 newTokenId);
 
     constructor(address initialOwner) ERC721("CreatureNFT", "CRTR") Ownable(initialOwner) {}
@@ -51,6 +54,7 @@ contract CreatureNFT is
         _speed[tokenId] = speedInit;
         _defense[tokenId] = defenseInit;
         _intelligence[tokenId] = intelligenceInit;
+        _evolutionStage[tokenId] = 1;
         rarity[tokenId] = rarityLevel;
     }
 
@@ -87,11 +91,7 @@ contract CreatureNFT is
         _setTokenURI(tokenId, uri);
         _level[tokenId] = 1;
         _xp[tokenId] = 0;
-        _power[tokenId] = 50;
-        _speed[tokenId] = 50;
-        _defense[tokenId] = 50;
-        _intelligence[tokenId] = 50;
-        rarity[tokenId] = "Common";
+        _evolutionStage[tokenId] = 1;
     }
 
     function addXP(uint256 tokenId, uint256 amount) public {
@@ -122,6 +122,30 @@ contract CreatureNFT is
         return _level[tokenId];
     }
 
+    function getEvolutionStage(uint256 tokenId) public view returns (uint8) {
+        require(_ownerOf(tokenId) != address(0), "Nonexistent token");
+        return _evolutionStage[tokenId];
+    }
+
+    function canEvolve(uint256 tokenId) public view returns (bool) {
+        require(_ownerOf(tokenId) != address(0), "Nonexistent token");
+        return _evolutionStage[tokenId] < 3;
+    }
+
+    // Evolve creature: only owner; updates tokenURI
+    function evolve(uint256 tokenId, string memory newUri) public {
+        require(_ownerOf(tokenId) != address(0), "Nonexistent token");
+        require(ownerOf(tokenId) == msg.sender, "Not the owner");
+        require(_evolutionStage[tokenId] < 3, "Max evolution reached");
+        uint8 newStage = _evolutionStage[tokenId] + 1;
+        _evolutionStage[tokenId] = newStage;
+        _setTokenURI(tokenId, newUri);
+        emit Evolved(tokenId, newStage, newUri);
+    }
+
+    // Note: On-chain evolve tokens removed; evolution gating by level only.
+
+    // Required overrides
     function breedCreatures(
         uint256 parent1,
         uint256 parent2,

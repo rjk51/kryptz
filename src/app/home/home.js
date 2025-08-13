@@ -5,87 +5,100 @@ export function HomeContent() {
         <div className="nes-container is-dark is-rounded">
           <div className="space-y-4">
             <h2 className="text-lg text-warning mb-4 retro-glow">
-              WELCOME TRAINER!
+              WELCOME TO KRYPTZ!
             </h2>
             <p className="text-sm leading-relaxed text-success">
-              Enter the world of Kryptz, where digital creatures live on the
-              blockchain! Each NFT is unique with special traits, abilities, and
-              evolution paths.
+              Enter the mystical realm of Kryptz, where powerful digital beings called 
+              <span className="text-warning"> ZLINGS</span> roam the blockchain! Each Zling is a unique NFT 
+              with special abilities, elemental powers, and evolutionary potential.
             </p>
             <div className="nes-container is-dark with-title">
-              <p className="title text-warning">FEATURES</p>
+              <p className="title text-warning">WHAT ARE ZLINGS?</p>
               <div className="text-xs space-y-2">
                 <p>
-                  <i className="nes-icon star is-small"></i> COLLECT rare
-                  creatures with unique DNA
+                  <i className="nes-icon star is-small"></i> <span className="text-warning">UNIQUE BEINGS:</span> Every Zling has randomized traits (Power, Speed, Defense, Intelligence)
                 </p>
                 <p>
-                  <i className="nes-icon trophy is-small"></i> BATTLE other
-                  trainers in PvP arena
+                  <i className="nes-icon trophy is-small"></i> <span className="text-warning">EVOLUTIONARY:</span> Train your Zling to level up and evolve through 3 stages with animated flame auras
                 </p>
                 <p>
-                  <i className="nes-icon coin is-small"></i> EVOLVE your creatures
-                  through training
+                  <i className="nes-icon coin is-small"></i> <span className="text-warning">TRAINABLE:</span> Use training tokens to boost traits and gain XP
                 </p>
                 <p>
-                  <i className="nes-icon coin is-small"></i> TRADE on the
-                  decentralized marketplace
+                  <i className="nes-icon sword is-small"></i> <span className="text-warning">BATTLERS:</span> Fight other trainers in PvP arena battles
                 </p>
               </div>
             </div>
-            <button className="nes-btn is-success w-full">
-              START YOUR JOURNEY
-            </button>
+            <div className="nes-container is-dark with-title">
+              <p className="title text-warning">HOW TO PLAY</p>
+              <div className="text-xs space-y-2">
+                <p><span className="text-yellow-400">1.</span> Connect your wallet and mint your first Zling</p>
+                <p><span className="text-yellow-400">2.</span> Train daily using your training tokens to boost stats</p>
+                <p><span className="text-yellow-400">3.</span> Evolve your Zling using evolve tokens (Stage 1 → 2 → 3)</p>
+                <p><span className="text-yellow-400">4.</span> Battle other players and complete quests</p>
+                <p><span className="text-yellow-400">5.</span> Trade on the marketplace</p>
+              </div>
+            </div>
           </div>
         </div>
   
-        {/* Featured Creature */}
+        {/* Evolution Showcase */}
         <div className="nes-container is-dark with-title">
-          <p className="title text-warning">FEATURED CREATURE</p>
-          <div className="text-center">
-            <div className="pixel-card mb-4 bg-gradient-to-br from-purple-600 to-pink-600">
-              <div className="w-32 h-32 mx-auto bg-gray-800 border-4 border-black mb-4 flex items-center justify-center">
-                <span className="text-4xl">🐉</span>
+          <p className="title text-warning">EVOLUTION STAGES</p>
+          <div className="text-center space-y-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-center gap-4">
+                <div className="w-16 h-16 bg-gray-800 border-4 border-black flex items-center justify-center">
+                  <span className="text-2xl">🐣</span>
+                </div>
+                <span className="text-xs">STAGE 1</span>
               </div>
-              <h3 className="text-sm mb-2">CYBER DRAGON #001</h3>
-              <div className="text-xs space-y-1">
-                <div className="flex justify-between">
-                  <span>TYPE:</span>
-                  <span className="text-red-400">FIRE/TECH</span>
+              <div className="flex items-center justify-center gap-4">
+                <div className="w-16 h-16 bg-gray-800 stage-2-frame flex items-center justify-center">
+                  <span className="text-2xl">🔥</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>LEVEL:</span>
-                  <span className="text-yellow-400">25</span>
+                <span className="text-xs text-yellow-400">STAGE 2 (Golden Flames)</span>
+              </div>
+              <div className="flex items-center justify-center gap-4">
+                <div className="w-16 h-16 bg-gray-800 stage-3-frame flex items-center justify-center">
+                  <span className="text-2xl">⚡</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>RARITY:</span>
-                  <span className="text-purple-400">LEGENDARY</span>
-                </div>
+                <span className="text-xs text-orange-400">STAGE 3 (Inferno Aura)</span>
               </div>
             </div>
-            <button className="nes-btn is-warning">VIEW DETAILS</button>
+            <div className="text-xs text-success">
+              Higher stages = stronger stats + animated frames!
+            </div>
           </div>
         </div>
   
-        {/* Game Stats */}
+        {/* Game Economy */}
         <div className="nes-container is-dark with-title md:col-span-2">
-          <p className="title text-warning">GAME STATISTICS</p>
+          <p className="title text-warning">GAME ECONOMY</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div className="nes-container is-dark">
-              <p className="text-xs mb-1">TOTAL CREATURES</p>
-              <p className="text-lg text-yellow-400">1,337</p>
+              <div className="text-2xl mb-2">🎯</div>
+              <p className="text-xs mb-1">TRAINING TOKENS</p>
+              <p className="text-sm text-yellow-400">Daily Refresh</p>
+              <p className="text-xs text-gray-400">Boost Zling stats</p>
             </div>
             <div className="nes-container is-dark">
-              <p className="text-xs mb-1">ACTIVE TRAINERS</p>
-              <p className="text-lg text-green-400">420</p>
+              <div className="text-2xl mb-2">🌟</div>
+              <p className="text-xs mb-1">EVOLVE TOKENS</p>
+              <p className="text-sm text-green-400">Quest Rewards</p>
+              <p className="text-xs text-gray-400">Unlock next stage</p>
             </div>
             <div className="nes-container is-dark">
-              <p className="text-xs mb-1">BATTLES TODAY</p>
-              <p className="text-lg text-red-400">89</p>
+              <div className="text-2xl mb-2">⚡</div>
+              <p className="text-xs mb-1">EXPERIENCE POINTS</p>
+              <p className="text-sm text-blue-400">Train & Battle</p>
+              <p className="text-xs text-gray-400">Level progression</p>
             </div>
             <div className="nes-container is-dark">
-              <p className="text-xs mb-1">MARKET VOLUME</p>
-              <p className="text-lg text-blue-400">12.5 CORE</p>
+              <div className="text-2xl mb-2">🏆</div>
+              <p className="text-xs mb-1">BLOCKCHAIN OWNED</p>
+              <p className="text-sm text-purple-400">True Ownership</p>
+              <p className="text-xs text-gray-400">Trade anytime</p>
             </div>
           </div>
         </div>

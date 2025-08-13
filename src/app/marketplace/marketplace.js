@@ -1,4 +1,14 @@
+import React, { useEffect } from "react";
+import { useAccount } from "wagmi";
+import { updateUserProgress } from "@/lib/supabase/updateUserProgress";
+
 export function MarketplaceContent() {
+    const { address } = useAccount();
+    useEffect(() => {
+      if (address) {
+        updateUserProgress(address, "marketplaceVisited", true);
+      }
+    }, [address]);
     const marketItems = [
       {
         id: 1,

@@ -8,7 +8,7 @@ export async function GET(req) {
   }
   try {
     const user = await getOrCreateUser(wallet);
-    return new Response(JSON.stringify({ tokens: user.tokens, xp: user.xp }), { status: 200 });
+    return new Response(JSON.stringify({ tokens: user.tokens, xp: user.xp, evolveTokens: user.evolve_tokens || 0 }), { status: 200 });
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500 });
   }
