@@ -421,7 +421,7 @@ export function CreaturesContent({ onProgressUpdate }) {
                       <div className="fixed inset-0 bg-black bg-opacity-70 flex flex-col items-center justify-center z-50">
                         <div className="nes-container is-dark is-rounded w-full max-w-xs p-4 text-center">
                           <p className="text-error text-lg mb-2">No Training Tokens</p>
-                          <p className="text-white text-sm mb-4">You don't have any training tokens left for today.<br/>Come back tomorrow for more!</p>
+                          <p className="text-white text-sm mb-4">You don&apos;t have any training tokens left for today.<br/>Come back tomorrow for more!</p>
                           <button className="nes-btn is-primary w-full" onClick={() => setNoTokenModal(false)}>OK</button>
                         </div>
                       </div>

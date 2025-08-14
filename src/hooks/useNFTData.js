@@ -1,7 +1,7 @@
 // src/hooks/useNFTData.js
 import { useEffect, useState } from "react";
 import { ethers } from "ethers";
-import ABI from "../contract/abi";
+import { CREATURE_ABI } from "../contract/abi";
 import { CONTRACT_ADDRESS } from "../contract/contract-address";
 
 export const useNFTData = (walletAddress) => {
@@ -20,15 +20,15 @@ export const useNFTData = (walletAddress) => {
         setLoading(true);
         console.log("🔍 Fetching NFTs for wallet:", walletAddress);
 
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, CREATURE_ABI, provider);
 
         const balance = await contract.balanceOf(walletAddress);
         console.log("🧾 NFT Balance:", balance.toString());
 
         const owned = [];
 
-        for (let i = 0; i < balance.toNumber(); i++) {
+        for (let i = 0; i < Number(balance); i++) {
           const tokenId = await contract.tokenOfOwnerByIndex(walletAddress, i);
           const tokenURI = await contract.tokenURI(tokenId);
           console.log(`📦 Token #${tokenId.toString()} URI:`, tokenURI);
