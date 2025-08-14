@@ -1,6 +1,5 @@
 // src/components/BattleArena.js
 import { useState } from "react";
-import { Matchmaker } from "./MatchmakingSection";
 
 const TYPE_EFFECTIVENESS = {
   fire: { grass: 2, water: 0.5, fire: 1 },
