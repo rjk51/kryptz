@@ -7,7 +7,6 @@ import { BattleContents } from "./battle/BattleContent";
 import { MarketplaceContent } from "./marketplace/marketplace";
 import { ProfileContent } from "./profile/profile";
 import { QuestsContent } from "./quests/QuestsContent";
-import { BreedSection } from "../components/BreedSection"; // ✅ IMPORTED BREED SECTION
 import { getOrCreateUser } from "@/lib/supabase/userService";
 import { useAccount } from "wagmi";
 import { getUserProgress } from "@/lib/supabase/userService";

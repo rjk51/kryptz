@@ -1,6 +1,3 @@
-import Popup from "@/components/Popup";
-import { dailyQuests, weeklyQuests } from "../questsData";
-
 export function QuestList({ quests, completedQuests, onComplete, loading, type }) {
   return (
     <div className="nes-container is-dark with-title">
