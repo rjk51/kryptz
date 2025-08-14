@@ -16,7 +16,7 @@ const Profile = () => {
     }
 
     try {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const provider = new ethers.BrowserProvider(window.ethereum);
       const accounts = await provider.send("eth_requestAccounts", []);
       setWallet(accounts[0]);
       console.log("✅ Connected wallet:", accounts[0]);
@@ -30,7 +30,7 @@ const Profile = () => {
   useEffect(() => {
     const checkConnection = async () => {
       if (window.ethereum) {
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const provider = new ethers.BrowserProvider(window.ethereum);
         const accounts = await provider.listAccounts();
         if (accounts.length > 0) setWallet(accounts[0]);
       }

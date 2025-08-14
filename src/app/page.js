@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { HomeContent } from "./home/home";
 import { CreaturesContent } from "./creatures/creatures";
 import { BattleContents } from "./battle/BattleContent";
@@ -42,7 +42,7 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  async function fetchUserStats() {
+  const fetchUserStats = useCallback(async () => {
     if (!address) return;
     try {
       console.log('[STATS] Fetching stats for address:', address);
@@ -87,7 +87,7 @@ export default function Home() {
     } catch (err) {
       console.error("Failed to fetch user stats:", err);
     }
-  }
+  }, [address]);
 
   async function refreshProgress() {
     if (!address) return;

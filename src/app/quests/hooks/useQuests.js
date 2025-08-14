@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAccount } from "wagmi";
 import { getCompletedQuests, completeQuest } from "@/lib/supabase/questService";
 import { getUserProgress } from "@/lib/supabase/userService";
@@ -21,7 +21,7 @@ export function useQuests() {
     marketplaceVisited: false,
   });
 
-  const refreshQuests = async () => {
+  const refreshQuests = useCallback(async () => {
     if (!address) return;
     try {
       const progress = await getUserProgress(address);
@@ -55,7 +55,7 @@ export function useQuests() {
       });
       setCompleted({ daily: [], weekly: [] });
     }
-  };
+  }, [address]);
 
   useEffect(() => {
     if (address) {

@@ -1,4 +1,5 @@
 // src/contract/abi.js
-import { abi as CREATURE_ABI } from "@/contract/CreatureNFT.json";
+import CreatureNFT from "@/contract/CreatureNFT.json";
 
-export default CREATURE_ABI;
+export const CREATURE_ABI = CreatureNFT.abi;
+export default CreatureNFT.abi;
