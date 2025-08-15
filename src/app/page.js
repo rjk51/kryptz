@@ -16,6 +16,7 @@ export default function Home() {
   const { address, isConnected } = useAccount();
   const [user, setUser] = useState(null);
   const [userStats, setUserStats] = useState({ xp: 0, currentLevelXp: 0, xpForNextLevel: 100, tokens: 0, evolveTokens: 0, level: 1 });
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     if (isConnected && address) {
@@ -33,6 +34,11 @@ export default function Home() {
       setUserStats({ xp: 0, currentLevelXp: 0, xpForNextLevel: 100, tokens: 0, evolveTokens: 0, level: 1 });
     }
   }, [isConnected, address]);
+
+  useEffect(() => {
+    // mark mounted on client to avoid rendering browser-only state during SSR
+    setMounted(true);
+  }, []);
 
   // Additional effect to fetch stats when user changes
   useEffect(() => {
@@ -123,8 +129,8 @@ export default function Home() {
           </p>
         </div>
         
-        {/* Stats Bar */}
-        {isConnected && (
+        {/* Stats Bar (render only after client mount to avoid hydration mismatch) */}
+        {mounted && isConnected && (
           <div className="mt-4 flex justify-center">
             <div className="flex gap-4 items-center text-xs">
               <div className="flex items-center gap-2 bg-gray-800 px-3 py-2 rounded">
