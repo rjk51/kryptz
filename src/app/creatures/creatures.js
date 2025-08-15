@@ -106,16 +106,34 @@ export function CreaturesContent({ onProgressUpdate }) {
           // Fetch on-chain traits and level/evolution
           let power = 0, speed = 0, defense = 0, intelligence = 0;
           let level = 1, stage = 1, canEvolve = false;
-          try {
-            [power, speed, defense, intelligence] = await contract.getTraits(tokenId);
-          } catch (err) {
-            console.error(`Error fetching on-chain traits for token ${tokenId}:`, err);
+
+          // Helper to conditionally log RPC call errors. Suppress noisy CALL_EXCEPTION / missing revert data in prod.
+          function logCallError(context, tokenId, err) {
+            const isCallException = err && (err.code === 'CALL_EXCEPTION' || String(err).toLowerCase().includes('missing revert data'));
+            if (isCallException) {
+              if (process.env.NODE_ENV === 'development') console.debug(`${context} (suppressed) for token ${tokenId}:`, err?.message || err);
+            } else {
+              console.error(`${context} for token ${tokenId}:`, err);
+            }
           }
+
           try {
-            level = await contract.getLevel(tokenId);
+            const onchain = await contract.getTraits(tokenId);
+            power = Number(onchain[0] ?? 0);
+            speed = Number(onchain[1] ?? 0);
+            defense = Number(onchain[2] ?? 0);
+            intelligence = Number(onchain[3] ?? 0);
           } catch (err) {
-            console.error(`Error fetching on-chain level for token ${tokenId}:`, err);
+            logCallError('Error fetching on-chain traits', tokenId, err);
           }
+
+          try {
+            const onchainLevel = await contract.getLevel(tokenId);
+            level = Number(onchainLevel ?? 1);
+          } catch (err) {
+            logCallError('Error fetching on-chain level', tokenId, err);
+          }
+
           try {
             // Prefer reading evolution stage from on-token metadata when available.
             // This avoids noisy RPC errors (for example if the deployed contract/address
@@ -128,13 +146,16 @@ export function CreaturesContent({ onProgressUpdate }) {
               stage = parsed ? Number(parsed[1]) : Number(attrStage.value) || 1;
             } else {
               // Fallback: try on-chain call. If it fails, we'll default to stage 1.
-              stage = await contract.getEvolutionStage(tokenId);
+              try {
+                const onchainStage = await contract.getEvolutionStage(tokenId);
+                stage = Number(onchainStage ?? 1);
+              } catch (err) {
+                logCallError('getEvolutionStage failed', tokenId, err);
+                stage = 1;
+              }
             }
           } catch (err) {
-            // Avoid spamming console in production for known RPC issues like "missing revert data".
-            if (process.env.NODE_ENV === "development") {
-              console.debug(`Debug: getEvolutionStage failed for token ${tokenId}:`, err);
-            }
+            logCallError('Error processing evolution stage', tokenId, err);
             stage = 1;
           }
           // Can evolve is now off-chain token gated; allow until max stage (3)
@@ -153,6 +174,26 @@ export function CreaturesContent({ onProgressUpdate }) {
           creatureList.push({ id: tokenId.toString(), level: Number(level), evolutionStage: Number(stage), canEvolve: Boolean(canEvolve), evolveTokens: Number(evolveTokensGlobal), ...meta, attributes });
         }
         setUserCreatures(creatureList);
+        // If no on-chain creatures were found (e.g. purchase simulated via local sales log),
+        // try server-side token discovery which includes purchases recorded in marketplace.sales.json
+        if (creatureList.length === 0) {
+          try {
+            const res = await fetch(`/api/userTokens?wallet=${address}`);
+            if (res.ok) {
+              const json = await res.json();
+              const tokens = Array.isArray(json.tokens) ? json.tokens : [];
+              if (tokens.length > 0) {
+                // tokens may include name and image from server; normalize
+                const mapped = tokens.map(t => ({ id: String(t.id), level: 1, evolutionStage: 1, canEvolve: false, evolveTokens: 0, ...t }));
+                setUserCreatures(mapped);
+                setLoading(false);
+                return;
+              }
+            }
+          } catch (e) {
+            // ignore fallback errors
+          }
+        }
       } catch (err) {
         console.error("Error in fetchCreatures:", err);
         setUserCreatures([]);

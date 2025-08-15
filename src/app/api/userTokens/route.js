@@ -1,4 +1,6 @@
 import { JsonRpcProvider, Contract } from 'ethers';
+import fs from 'fs/promises';
+import path from 'path';
 
 const contractABI = [
   "function balanceOf(address owner) view returns (uint256)",
@@ -48,6 +50,24 @@ export async function GET(req) {
         }
         continue;
       }
+    }
+
+    // Also include any purchases recorded in local sales log (local-fallback)
+    try {
+      const salesPath = path.join(process.cwd(), 'data', 'marketplace.sales.json');
+      let sales = [];
+      try {
+        const raw = await fs.readFile(salesPath, 'utf8');
+        sales = JSON.parse(raw || '[]');
+      } catch (e) { sales = []; }
+      const purchased = sales.filter(s => String(s.buyer).toLowerCase() === String(wallet).toLowerCase()).map(s => ({ id: String(s.token_id), name: s.name || null, image: null }));
+      // merge: prefer on-chain tokens already collected
+      const existingIds = new Set(tokens.map(t => String(t.id)));
+      for (const p of purchased) {
+        if (!existingIds.has(String(p.id))) tokens.push(p);
+      }
+    } catch (e) {
+      // ignore sales merge failures
     }
 
     return new Response(JSON.stringify({ tokens }), { status: 200 });

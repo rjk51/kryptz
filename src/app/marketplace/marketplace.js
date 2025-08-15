@@ -111,6 +111,7 @@ export function MarketplaceContent() {
     useEffect(() => { loadUserTokens(); }, [address, isConnected]);
 
     const [myListings, setMyListings] = useState([]);
+  const [allListings, setAllListings] = useState([]);
 
     async function loadMyListings() {
       if (!address) return;
@@ -142,12 +143,44 @@ export function MarketplaceContent() {
 
         const enriched = await enrich(raw);
         setMyListings(enriched);
+  // also populate all listings state for buyers
+  setAllListings(enriched);
       } catch (e) {
         setMyListings([]);
       }
     }
 
     useEffect(() => { loadMyListings(); }, [address]);
+
+    async function loadAllListings() {
+      try {
+        const res = await fetch(`/api/marketplace/local-listings`);
+        if (!res.ok) { setAllListings([]); return; }
+        const d = await res.json();
+        const raw = Array.isArray(d.listings) ? d.listings : [];
+        async function enrich(listings) {
+          return await Promise.all(listings.map(async (l) => {
+            try {
+              const r = await fetch(`/api/marketplace/token-meta?tokenId=${encodeURIComponent(l.token_id)}`);
+              if (!r.ok) return { ...l };
+              const body = await r.json();
+              const meta = body?.meta || {};
+              let img = meta.image || meta.image_url || null;
+              if (img && typeof img === 'string' && img.startsWith('ipfs://')) img = img.replace('ipfs://', 'https://ipfs.io/ipfs/');
+              return { ...l, image: img };
+            } catch (e) {
+              return { ...l };
+            }
+          }));
+        }
+        const enriched = await enrich(raw);
+        setAllListings(enriched);
+      } catch (e) {
+        setAllListings([]);
+      }
+    }
+
+    useEffect(() => { loadAllListings(); }, []);
 
     const marketItems = [
       {
@@ -337,6 +370,67 @@ export function MarketplaceContent() {
           ))}
         </div>
 
+        {/* All active listings (buyers) */}
+        <div className="flex items-center justify-between mb-4">
+          <h4 className="text-warning">Active Listings</h4>
+          <div>
+            <button className="nes-btn is-primary" onClick={() => { loadAllListings(); loadMyListings(); }}>Refresh</button>
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {allListings.length === 0 ? (
+            <div className="nes-container is-dark">No active listings.</div>
+          ) : allListings.map(l => (
+            <div key={l.id} className="nes-container is-dark">
+              <div className="text-center">
+                <div className="w-24 h-24 mx-auto bg-gradient-to-br from-gray-800 to-gray-900 border-4 border-black mb-4 flex items-center justify-center overflow-hidden">
+                  {l.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={l.image} alt={l.name || `Creature #${l.token_id}`} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-3xl">🦴</span>
+                  )}
+                </div>
+                <h3 className="text-xs mb-2 text-warning">{l.name ? l.name : `Creature #${l.token_id}`}</h3>
+                <div className="text-xs space-y-1 mb-4">
+                  <div className="flex justify-between">
+                    <span>PRICE:</span>
+                    <span className="text-green-400">{l.price} {l.currency || 'CORE'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>SELLER:</span>
+                    <span className="text-purple-400">{String(l.seller).slice(0,6)}...{String(l.seller).slice(-4)}</span>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button className="nes-btn is-success w-full text-xs" onClick={async () => {
+                    if (!isConnected || !address) return alert('Connect your wallet to buy');
+                    if (String(address).toLowerCase() === String(l.seller).toLowerCase()) return alert('You cannot buy your own listing');
+                    if (!confirm(`Buy Creature #${l.token_id} for ${l.price} ${l.currency || 'CORE'}?`)) return;
+                    try {
+                      const res = await fetch('/api/marketplace/buy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: l.id, buyer: address }) });
+                      const txt = await res.text();
+                      let data;
+                      try { data = JSON.parse(txt); } catch { data = txt; }
+                      if (!res.ok) {
+                        alert('Purchase failed: ' + (data?.error || String(data)));
+                        return;
+                      }
+                      alert('Purchase successful (simulated).');
+                      await loadAllListings();
+                      await loadMyListings();
+                    } catch (e) {
+                      console.error('Buy failed', e);
+                      alert('Purchase failed: ' + (e?.message || String(e)));
+                    }
+                  }}>BUY</button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {marketItems.map((item) => (
             <div key={item.id} className="nes-container is-dark">
@@ -355,7 +449,24 @@ export function MarketplaceContent() {
                     <span className="text-purple-400">{item.rarity}</span>
                   </div>
                 </div>
-                <button className="nes-btn is-success w-full text-xs">
+                <button className="nes-btn is-success w-full text-xs" onClick={async () => {
+                  if (!isConnected || !address) return alert('Connect your wallet to buy');
+                  if (!confirm(`Buy ${item.name} for ${item.price}?`)) return;
+                  try {
+                    const res = await fetch('/api/marketplace/simulate-buy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token_id: String(item.id), price: item.price, currency: 'CORE', seller: 'platform', buyer: address, name: item.name }) });
+                    const txt = await res.text();
+                    let data;
+                    try { data = JSON.parse(txt); } catch { data = txt; }
+                    if (!res.ok) {
+                      alert('Purchase failed: ' + (data?.error || String(data)));
+                      return;
+                    }
+                    alert('Purchase successful (simulated).');
+                  } catch (e) {
+                    console.error('Simulated buy failed', e);
+                    alert('Purchase failed: ' + (e?.message || String(e)));
+                  }
+                }}>
                   BUY NOW
                 </button>
               </div>
