@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { BrowserProvider, Contract } from 'ethers';
+import { BrowserProvider, Contract, parseEther } from 'ethers';
 import { useAccount } from "wagmi";
 import { updateUserProgress } from "@/lib/supabase/updateUserProgress";
 
@@ -10,6 +10,7 @@ export function MarketplaceContent() {
     const [selectedToken, setSelectedToken] = useState("");
     const [price, setPrice] = useState("");
     const [loading, setLoading] = useState(false);
+    const [operatorAddr, setOperatorAddr] = useState(null);
 
     useEffect(() => {
       if (address) {
@@ -17,12 +18,9 @@ export function MarketplaceContent() {
       }
     }, [address]);
 
-    // Fetch user's owned tokens. Prefer client-side on-chain discovery when wallet is connected,
-    // then fall back to the server endpoint and local-file listings.
     async function loadUserTokens() {
       if (!address) return;
 
-      // 1) Client-side on-chain lookup (most reliable when wallet is connected)
       if (isConnected && typeof window !== 'undefined' && window.ethereum) {
         try {
           const provider = new BrowserProvider(window.ethereum);
@@ -52,32 +50,18 @@ export function MarketplaceContent() {
               if (img && typeof img === 'string' && img.startsWith('ipfs://')) img = img.replace('ipfs://', 'https://ipfs.io/ipfs/');
               onchain.push({ id: tokenId.toString ? tokenId.toString() : String(tokenId), name: meta.name || null, image: img });
             } catch (err) {
-              // skip problematic tokens but continue
             }
           }
-          if (onchain.length > 0) {
-            setUserTokens(onchain);
-            return;
-          }
-        } catch (e) {
-          // Ignore and continue to server/local fallbacks
-        }
+          if (onchain.length > 0) { setUserTokens(onchain); return; }
+        } catch (e) {}
       }
 
-      // 2) Server-side token discovery
-      if (!isConnected) {
-        // If wallet isn't connected, server-side discovery still works if a wallet query param is provided
-      }
       try {
         const res = await fetch(`/api/userTokens?wallet=${address}`);
-        if (!res.ok) {
-          setUserTokens([]);
-          return;
-        }
+        if (!res.ok) { setUserTokens([]); return; }
         const data = await res.json();
         const tokens = Array.isArray(data.tokens) ? data.tokens : [];
         if (tokens.length > 0) {
-          // ensure any token image ipfs normalization
           const normalized = tokens.map(t => {
             let img = t.image || t.meta?.image || null;
             if (img && typeof img === 'string' && img.startsWith('ipfs://')) img = img.replace('ipfs://', 'https://ipfs.io/ipfs/');
@@ -86,45 +70,30 @@ export function MarketplaceContent() {
           setUserTokens(normalized);
           return;
         }
-
-        // 3) local fallback listings
         try {
           const res2 = await fetch(`/api/marketplace/local-listings?wallet=${address}`);
           if (res2.ok) {
             const d2 = await res2.json();
             const localTokens = (d2.listings || []).map(l => ({ id: l.token_id, name: l.name || null }));
-            if (localTokens.length > 0) {
-              setUserTokens(localTokens);
-              return;
-            }
+            if (localTokens.length > 0) { setUserTokens(localTokens); return; }
           }
-        } catch (e) {
-          // ignore
-        }
-
+        } catch {}
         setUserTokens(tokens);
-      } catch (err) {
-        setUserTokens([]);
-      }
+      } catch { setUserTokens([]); }
     }
 
     useEffect(() => { loadUserTokens(); }, [address, isConnected]);
 
     const [myListings, setMyListings] = useState([]);
-  const [allListings, setAllListings] = useState([]);
+    const [allListings, setAllListings] = useState([]);
 
     async function loadMyListings() {
       if (!address) return;
       try {
         const res = await fetch(`/api/marketplace/local-listings?wallet=${address}`);
-        if (!res.ok) {
-          setMyListings([]);
-          return;
-        }
+        if (!res.ok) { setMyListings([]); return; }
         const d = await res.json();
         const raw = Array.isArray(d.listings) ? d.listings : [];
-
-        // Enrich listings with token metadata (image) via token-meta endpoint
         async function enrich(listings) {
           return await Promise.all(listings.map(async (l) => {
             try {
@@ -135,19 +104,13 @@ export function MarketplaceContent() {
               let img = meta.image || meta.image_url || null;
               if (img && typeof img === 'string' && img.startsWith('ipfs://')) img = img.replace('ipfs://', 'https://ipfs.io/ipfs/');
               return { ...l, image: img };
-            } catch (e) {
-              return { ...l };
-            }
+            } catch { return { ...l }; }
           }));
         }
-
         const enriched = await enrich(raw);
         setMyListings(enriched);
-  // also populate all listings state for buyers
-  setAllListings(enriched);
-      } catch (e) {
-        setMyListings([]);
-      }
+        setAllListings(enriched);
+      } catch { setMyListings([]); }
     }
 
     useEffect(() => { loadMyListings(); }, [address]);
@@ -168,43 +131,15 @@ export function MarketplaceContent() {
               let img = meta.image || meta.image_url || null;
               if (img && typeof img === 'string' && img.startsWith('ipfs://')) img = img.replace('ipfs://', 'https://ipfs.io/ipfs/');
               return { ...l, image: img };
-            } catch (e) {
-              return { ...l };
-            }
+            } catch { return { ...l }; }
           }));
         }
         const enriched = await enrich(raw);
         setAllListings(enriched);
-      } catch (e) {
-        setAllListings([]);
-      }
+      } catch { setAllListings([]); }
     }
 
     useEffect(() => { loadAllListings(); }, []);
-
-    const marketItems = [
-      {
-        id: 1,
-        name: "LIGHTNING BEAST",
-        price: "2.5 CORE",
-        rarity: "RARE",
-        emoji: "⚡",
-      },
-      {
-        id: 2,
-        name: "SHADOW CAT",
-        price: "1.8 CORE",
-        rarity: "UNCOMMON",
-        emoji: "🐱",
-      },
-      {
-        id: 3,
-        name: "CRYSTAL BIRD",
-        price: "5.0 CORE",
-        rarity: "EPIC",
-        emoji: "🦅",
-      },
-    ];
   
     return (
       <div className="space-y-8">
@@ -218,7 +153,6 @@ export function MarketplaceContent() {
           </div>
         </div>
 
-        {/* List modal */}
         {listModalOpen && (
           <div className="nes-container is-dark">
             <h4 className="text-warning">List your creature for sale</h4>
@@ -241,7 +175,6 @@ export function MarketplaceContent() {
                 <label className="text-xs">Price (CORE)</label>
                 <button className="nes-btn is-small" onClick={async () => { await loadUserTokens(); alert('Refreshed tokens'); }}>Refresh tokens</button>
               </div>
-              {/* Selected token preview */}
               {selectedToken && (() => {
                 const tok = userTokens.find(x => String(x.id) === String(selectedToken));
                 if (!tok) return null;
@@ -249,7 +182,6 @@ export function MarketplaceContent() {
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-gray-900 border-2 border-black overflow-hidden">
                       {tok.image ? (
-                        // eslint-disable-next-line @next/next/no-img-element
                         <img src={tok.image} alt={tok.name || `Creature #${tok.id}`} className="w-full h-full object-cover" />
                       ) : (
                         <div className="flex items-center justify-center h-full">🦴</div>
@@ -266,44 +198,56 @@ export function MarketplaceContent() {
                   if (!selectedToken || !price) return alert('Select a token and set a price');
                   setLoading(true);
                   const endpoint = (typeof window !== 'undefined' && window.location && window.location.origin) ? `${window.location.origin}/api/marketplace/list` : '/api/marketplace/list';
-                  async function doPost() {
-                    try {
-                      const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wallet: address, tokenId: selectedToken, price }) });
-                      const text = await res.text();
-                      let data;
-                      try { data = JSON.parse(text); } catch { data = text; }
-                      if (!res.ok) {
-                        const errObj = data?.error ?? data;
-                        const message = typeof errObj === 'object' ? JSON.stringify(errObj, null, 2) : String(errObj);
-                        console.error('Listing failed response:', data);
-                        alert('Listing failed: ' + message);
-                        return { ok: false };
-                      }
-                      return { ok: true, data };
-                    } catch (err) {
-                      console.error('Listing call failed (network):', err);
-                      return { ok: false, networkError: err };
-                    }
-                  }
-
-                  // try once, then retry a single time on network error
-                  let result = await doPost();
-                  if (!result.ok && result.networkError) {
-                    // brief retry
-                    result = await doPost();
-                  }
-
-                  if (!result.ok) {
-                    const err = result.networkError;
-                    const msg = err ? `${err.name}: ${err.message}` : 'Unknown error';
-                    alert('Listing failed: ' + msg + '\nSee console for details.');
+                  let resp;
+                  try {
+                    const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wallet: address, tokenId: selectedToken, price }) });
+                    const text = await res.text();
+                    try { resp = JSON.parse(text); } catch { resp = { listing: null }; }
+                    if (!res.ok) throw new Error(typeof resp?.error === 'string' ? resp.error : 'Listing failed');
+                  } catch (err) {
+                    alert('Listing failed: ' + (err?.message || String(err)));
                     setLoading(false);
                     return;
+                  }
+
+                  // Ask user to approve operator if provided
+                  const operator = resp?.operator || process.env.NEXT_PUBLIC_MARKET_OPERATOR;
+                  if (!operator) {
+                    alert('Listed. Note: No operator configured for auto-transfer.');
+                  } else {
+                    try {
+                      const provider = new BrowserProvider(window.ethereum);
+                      const signer = await provider.getSigner();
+                      const contract = new Contract(process.env.NEXT_PUBLIC_CONTRACT_ADDRESS, [
+                        "function setApprovalForAll(address operator, bool approved)",
+                        "function isApprovedForAll(address owner, address operator) view returns (bool)",
+                        "function approve(address to, uint256 tokenId)",
+                        "function getApproved(uint256 tokenId) view returns (address)",
+                      ], signer);
+
+                      // Prefer global operator approval so future transfers do not require per-token approvals
+                      const hasAll = await contract.isApprovedForAll(address, operator);
+                      if (!hasAll) {
+                        const txAll = await contract.setApprovalForAll(operator, true);
+                        await txAll.wait();
+                      }
+
+                      // Fallback: ensure token-level approval just in case
+                      const current = await contract.getApproved(selectedToken);
+                      if (String(current).toLowerCase() !== String(operator).toLowerCase()) {
+                        const tx = await contract.approve(operator, selectedToken);
+                        await tx.wait();
+                      }
+                    } catch (e) {
+                      console.warn('Approve operator failed:', e);
+                    }
                   }
 
                   alert('Listed successfully');
                   setListModalOpen(false);
                   setLoading(false);
+                  await loadMyListings();
+                  await loadAllListings();
                 }}>{loading ? 'Listing...' : 'LIST'}</button>
                 <button className="nes-btn" onClick={() => setListModalOpen(false)}>CANCEL</button>
               </div>
@@ -311,7 +255,6 @@ export function MarketplaceContent() {
           </div>
         )}
   
-        {/* My Listings section */}
         <div className="flex items-center justify-between mb-4">
           <h4 className="text-warning">My Listings</h4>
           <div>
@@ -327,7 +270,6 @@ export function MarketplaceContent() {
               <div className="text-center">
                 <div className="w-24 h-24 mx-auto bg-gradient-to-br from-gray-800 to-gray-900 border-4 border-black mb-4 flex items-center justify-center overflow-hidden">
                   {l.image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img src={l.image} alt={l.name || `Creature #${l.token_id}`} className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-3xl">🦴</span>
@@ -359,6 +301,7 @@ export function MarketplaceContent() {
                       }
                       alert('Removed listing');
                       await loadMyListings();
+                      await loadAllListings();
                     } catch (e) {
                       console.error('Remove failed', e);
                       alert('Remove failed: ' + (e?.message || String(e)));
@@ -370,7 +313,6 @@ export function MarketplaceContent() {
           ))}
         </div>
 
-        {/* All active listings (buyers) */}
         <div className="flex items-center justify-between mb-4">
           <h4 className="text-warning">Active Listings</h4>
           <div>
@@ -386,7 +328,6 @@ export function MarketplaceContent() {
               <div className="text-center">
                 <div className="w-24 h-24 mx-auto bg-gradient-to-br from-gray-800 to-gray-900 border-4 border-black mb-4 flex items-center justify-center overflow-hidden">
                   {l.image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img src={l.image} alt={l.name || `Creature #${l.token_id}`} className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-3xl">🦴</span>
@@ -409,66 +350,35 @@ export function MarketplaceContent() {
                     if (String(address).toLowerCase() === String(l.seller).toLowerCase()) return alert('You cannot buy your own listing');
                     if (!confirm(`Buy Creature #${l.token_id} for ${l.price} ${l.currency || 'CORE'}?`)) return;
                     try {
-                      const res = await fetch('/api/marketplace/buy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: l.id, buyer: address }) });
-                      const txt = await res.text();
-                      let data;
-                      try { data = JSON.parse(txt); } catch { data = txt; }
-                      if (!res.ok) {
-                        alert('Purchase failed: ' + (data?.error || String(data)));
+                      // 1) Send payment on-chain to seller
+                      const provider = new BrowserProvider(window.ethereum);
+                      const signer = await provider.getSigner();
+                      const tx = await signer.sendTransaction({ to: l.seller, value: parseEther(String(l.price)) });
+                      const receipt = await tx.wait();
+                      // 2) Mark listing as sold first
+                      const buyRes = await fetch('/api/marketplace/buy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: l.id, buyer: address }) });
+                      if (!buyRes.ok) {
+                        alert('Failed to mark listing as sold. Please contact support.');
                         return;
                       }
-                      alert('Purchase successful (simulated).');
+                      
+                      // 3) Call backend to transfer NFT via operator
+                      const res = await fetch('/api/marketplace/execute-purchase', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ listingId: l.id, buyer: address, paymentTxHash: tx.hash }) });
+                      const txt = await res.text();
+                      let data; try { data = JSON.parse(txt); } catch { data = txt; }
+                      if (!res.ok) {
+                        alert('Backend transfer failed: ' + (data?.error || String(data))); return;
+                      }
+                      alert('Purchase successful!');
                       await loadAllListings();
                       await loadMyListings();
+                      await loadUserTokens(); // Refresh buyer's creature list
                     } catch (e) {
                       console.error('Buy failed', e);
                       alert('Purchase failed: ' + (e?.message || String(e)));
                     }
                   }}>BUY</button>
                 </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {marketItems.map((item) => (
-            <div key={item.id} className="nes-container is-dark">
-              <div className="text-center">
-                <div className="w-24 h-24 mx-auto bg-gradient-to-br from-gray-800 to-gray-900 border-4 border-black mb-4 flex items-center justify-center">
-                  <span className="text-3xl">{item.emoji}</span>
-                </div>
-                <h3 className="text-xs mb-2 text-warning">{item.name}</h3>
-                <div className="text-xs space-y-1 mb-4">
-                  <div className="flex justify-between">
-                    <span>PRICE:</span>
-                    <span className="text-green-400">{item.price}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>RARITY:</span>
-                    <span className="text-purple-400">{item.rarity}</span>
-                  </div>
-                </div>
-                <button className="nes-btn is-success w-full text-xs" onClick={async () => {
-                  if (!isConnected || !address) return alert('Connect your wallet to buy');
-                  if (!confirm(`Buy ${item.name} for ${item.price}?`)) return;
-                  try {
-                    const res = await fetch('/api/marketplace/simulate-buy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token_id: String(item.id), price: item.price, currency: 'CORE', seller: 'platform', buyer: address, name: item.name }) });
-                    const txt = await res.text();
-                    let data;
-                    try { data = JSON.parse(txt); } catch { data = txt; }
-                    if (!res.ok) {
-                      alert('Purchase failed: ' + (data?.error || String(data)));
-                      return;
-                    }
-                    alert('Purchase successful (simulated).');
-                  } catch (e) {
-                    console.error('Simulated buy failed', e);
-                    alert('Purchase failed: ' + (e?.message || String(e)));
-                  }
-                }}>
-                  BUY NOW
-                </button>
               </div>
             </div>
           ))}

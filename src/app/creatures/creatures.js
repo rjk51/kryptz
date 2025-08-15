@@ -262,7 +262,7 @@ export function CreaturesContent({ onProgressUpdate }) {
           contractAddress,
           [
             ...contractABI,
-            "function mintCreature(address to, string uri, uint256 powerInit, uint256 speedInit, uint256 defenseInit, uint256 intelligenceInit)"
+            "function mintCreature(address to, string uri, uint256 powerInit, uint256 speedInit, uint256 defenseInit, uint256 intelligenceInit, string rarityLevel)"
           ],
           signer
         );
@@ -273,6 +273,7 @@ export function CreaturesContent({ onProgressUpdate }) {
           traits.speed,
           traits.defense,
           traits.intelligence,
+          "Common",
           { gasLimit: 500000 }
         );
         await tx.wait();

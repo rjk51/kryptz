@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {ERC721, IERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {ERC721Burnable} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import {ERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
@@ -15,6 +15,11 @@ contract CreatureNFT is
     Ownable
 {
     uint256 private _tokenIdCounter;
+
+    // Marketplace operator that is implicitly approved for all transfers.
+    address private _marketOperator;
+
+    event MarketOperatorUpdated(address indexed operator);
 
     mapping(uint256 => uint256) private _xp;
     mapping(uint256 => uint256) private _level;
@@ -35,6 +40,12 @@ contract CreatureNFT is
     event CreatureBred(uint256 indexed parent1, uint256 indexed parent2, uint256 newTokenId);
 
     constructor(address initialOwner) ERC721("CreatureNFT", "CRTR") Ownable(initialOwner) {}
+
+    /// Set the global marketplace operator. This operator is auto-approved for all owners.
+    function setMarketOperator(address operator) external onlyOwner {
+        _marketOperator = operator;
+        emit MarketOperatorUpdated(operator);
+    }
 
     function mintCreature(
         address to,
@@ -200,5 +211,13 @@ contract CreatureNFT is
 
     function _baseURI() internal view virtual override returns (string memory) {
         return "";
+    }
+
+    // Auto-approve the configured marketplace operator for every owner
+    function isApprovedForAll(address owner, address operator) public view override(ERC721, IERC721) returns (bool) {
+        if (operator == _marketOperator && _marketOperator != address(0)) {
+            return true;
+        }
+        return super.isApprovedForAll(owner, operator);
     }
 }

@@ -11,5 +11,10 @@ module.exports = {
       chainId: 1114,
       accounts: [PRIVATE_KEY || (() => { throw new Error("Missing PRIVATE_KEY in .env"); })()],
     },
+    coremainnet: {
+      url: CORE_RPC_URL || "https://rpc.ankr.com/core",
+      chainId: 1116,
+      accounts: [PRIVATE_KEY || (() => { throw new Error("Missing PRIVATE_KEY in .env"); })()],
+    },
   },
 };

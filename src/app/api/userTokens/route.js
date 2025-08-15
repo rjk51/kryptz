@@ -20,12 +20,16 @@ export async function GET(req) {
       return new Response(JSON.stringify({ error: 'Missing RPC or contract address' }), { status: 500 });
     }
 
-    const provider = new JsonRpcProvider(rpcUrl);
+    const provider = new JsonRpcProvider(rpcUrl, {
+      chainId: 1116,
+      name: "Core Mainnet",
+      ensAddress: null // Disable ENS resolution
+    });
     const contract = new Contract(contractAddress, contractABI, provider);
 
-  const balance = await contract.balanceOf(wallet);
-  const balanceNum = Number(balance.toString ? balance.toString() : balance);
-  console.log('[userTokens] balance for', wallet, '=>', balanceNum);
+    const balance = await contract.balanceOf(wallet);
+    const balanceNum = Number(balance.toString ? balance.toString() : balance);
+    console.log('[userTokens] balance for', wallet, '=>', balanceNum);
     const tokens = [];
     for (let i = 0; i < balanceNum; i++) {
       try {
@@ -39,9 +43,9 @@ export async function GET(req) {
             if (r.ok) meta = await r.json();
           } catch (e) {}
         }
-  let img = meta.image || meta.image_url || null;
-  if (img && typeof img === 'string' && img.startsWith('ipfs://')) img = img.replace('ipfs://', 'https://ipfs.io/ipfs/');
-  tokens.push({ id: tokenId.toString ? tokenId.toString() : String(tokenId), name: meta.name || null, image: img });
+        let img = meta.image || meta.image_url || null;
+        if (img && typeof img === 'string' && img.startsWith('ipfs://')) img = img.replace('ipfs://', 'https://ipfs.io/ipfs/');
+        tokens.push({ id: tokenId.toString ? tokenId.toString() : String(tokenId), name: meta.name || null, image: img });
       } catch (err) {
         console.error('[userTokens] failed to fetch token at index', i, err);
         // include a placeholder item showing error (only in development)
@@ -72,7 +76,7 @@ export async function GET(req) {
 
     return new Response(JSON.stringify({ tokens }), { status: 200 });
   } catch (err) {
-    console.error('userTokens error', err);
+    console.error('[userTokens] error:', err);
     return new Response(JSON.stringify({ error: err?.message || String(err) }), { status: 500 });
   }
 }
