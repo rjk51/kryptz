@@ -1,26 +1,30 @@
-import fs from 'fs/promises';
-import path from 'path';
+import { supabase } from '@/lib/supabase/supabaseClient';
 
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
     const wallet = searchParams.get('wallet');
-    const filePath = path.join(process.cwd(), 'data', 'marketplace.local.json');
-    let list = [];
-    try {
-      const raw = await fs.readFile(filePath, 'utf8');
-      list = JSON.parse(raw || '[]');
-    } catch (e) {
-      // file missing or empty -> return empty list
-      list = [];
-    }
+    
+    let query = supabase
+      .from('marketplace')
+      .select('*')
+      .eq('status', 'active')
+      .order('created_at', { ascending: false });
+
     if (wallet) {
-      const filtered = list.filter(l => String(l.seller).toLowerCase() === String(wallet).toLowerCase());
-      return new Response(JSON.stringify({ listings: filtered }), { status: 200 });
+      query = query.eq('seller', wallet);
     }
-    return new Response(JSON.stringify({ listings: list }), { status: 200 });
+
+    const { data: listings, error } = await query;
+
+    if (error) {
+      console.error('Supabase query error:', error);
+      return new Response(JSON.stringify({ error: 'Failed to fetch listings' }), { status: 500 });
+    }
+
+    return new Response(JSON.stringify({ listings: listings || [] }), { status: 200 });
   } catch (err) {
-    console.error('local-listings error', err);
+    console.error('Listings fetch error:', err);
     return new Response(JSON.stringify({ error: err?.message || String(err) }), { status: 500 });
   }
 }
