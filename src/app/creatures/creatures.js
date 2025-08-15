@@ -117,9 +117,25 @@ export function CreaturesContent({ onProgressUpdate }) {
             console.error(`Error fetching on-chain level for token ${tokenId}:`, err);
           }
           try {
-            stage = await contract.getEvolutionStage(tokenId);
+            // Prefer reading evolution stage from on-token metadata when available.
+            // This avoids noisy RPC errors (for example if the deployed contract/address
+            // doesn't expose the call expected by the ABI or the node returns "missing revert data").
+            const metaAttrs = (meta && meta.attributes) || [];
+            const attrStage = metaAttrs.find(a => a.trait_type === "Evolution Stage");
+            if (attrStage && attrStage.value !== undefined && attrStage.value !== null) {
+              // Attribute may be stored as "Stage 1" or a numeric value — extract number if possible.
+              const parsed = String(attrStage.value).match(/(\d+)/);
+              stage = parsed ? Number(parsed[1]) : Number(attrStage.value) || 1;
+            } else {
+              // Fallback: try on-chain call. If it fails, we'll default to stage 1.
+              stage = await contract.getEvolutionStage(tokenId);
+            }
           } catch (err) {
-            console.error(`Error fetching evolution stage for token ${tokenId}:`, err);
+            // Avoid spamming console in production for known RPC issues like "missing revert data".
+            if (process.env.NODE_ENV === "development") {
+              console.debug(`Debug: getEvolutionStage failed for token ${tokenId}:`, err);
+            }
+            stage = 1;
           }
           // Can evolve is now off-chain token gated; allow until max stage (3)
           canEvolve = Number(stage) < 3;
