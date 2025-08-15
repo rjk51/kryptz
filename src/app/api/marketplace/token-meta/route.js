@@ -11,8 +11,8 @@ export async function GET(req) {
 		if (!rpc || !contractAddress) return new Response(JSON.stringify({ error: 'RPC or contract address not configured' }), { status: 500 });
 
 		const provider = new JsonRpcProvider(rpc, {
-			chainId: 1116,
-			name: "Core Mainnet",
+			chainId: 1114,
+			name: "Core Testnet",
 			ensAddress: null // Disable ENS resolution
 		});
 		const abi = ["function tokenURI(uint256 tokenId) view returns (string)"];

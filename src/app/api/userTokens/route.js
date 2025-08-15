@@ -21,8 +21,8 @@ export async function GET(req) {
     }
 
     const provider = new JsonRpcProvider(rpcUrl, {
-      chainId: 1116,
-      name: "Core Mainnet",
+      chainId: 1114,
+      name: "Core Testnet",
       ensAddress: null // Disable ENS resolution
     });
     const contract = new Contract(contractAddress, contractABI, provider);

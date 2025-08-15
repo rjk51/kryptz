@@ -25,7 +25,7 @@ async function main() {
   console.log("\n🚀 Deployment Summary:");
   console.log("📋 Contract: CreatureNFT");
   console.log("📍 Address:", addr);
-  console.log("🔗 Network: Core Mainnet (Chain ID: 1116)");
+  console.log("🔗 Network: Core Testnet (Chain ID: 1114)");
   console.log("👤 Owner:", deployer.address);
   if (operator) {
     console.log("🏪 Market Operator:", operator);
