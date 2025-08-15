@@ -1,0 +1,24 @@
+[
+  {
+    "id": "sale-1755262666103",
+    "listingId": "platform-2",
+    "token_id": "2",
+    "seller": "platform",
+    "buyer": "0x79Ca96c02b2568d0d3aB7348c08f3824C958e5a9",
+    "price": "1.8 CORE",
+    "currency": "CORE",
+    "name": "SHADOW CAT",
+    "created_at": "2025-08-15T12:57:46.103Z"
+  },
+  {
+    "id": "sale-1755262992561",
+    "listingId": "platform-2",
+    "token_id": "2",
+    "seller": "platform",
+    "buyer": "0x79Ca96c02b2568d0d3aB7348c08f3824C958e5a9",
+    "price": "1.8 CORE",
+    "currency": "CORE",
+    "name": "SHADOW CAT",
+    "created_at": "2025-08-15T13:03:12.561Z"
+  }
+]

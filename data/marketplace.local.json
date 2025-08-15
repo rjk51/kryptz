@@ -9,12 +9,21 @@
     "source": "local-fallback"
   },
   {
-    "id": "local-1755259142385",
+    "id": "local-1755262238980",
     "seller": "0x79Ca96c02b2568d0d3aB7348c08f3824C958e5a9",
-    "token_id": "20",
-    "price": 2,
+    "token_id": "19",
+    "price": 2.5,
     "currency": "CORE",
-    "created_at": "2025-08-15T11:59:02.385Z",
+    "created_at": "2025-08-15T12:50:38.980Z",
+    "source": "local-fallback"
+  },
+  {
+    "id": "local-1755263494090",
+    "seller": "0x79Ca96c02b2568d0d3aB7348c08f3824C958e5a9",
+    "token_id": "22",
+    "price": 3,
+    "currency": "CORE",
+    "created_at": "2025-08-15T13:11:34.090Z",
     "source": "local-fallback"
   }
 ]
