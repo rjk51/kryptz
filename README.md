@@ -60,8 +60,8 @@ A decentralized NFT creature collection and battle game built on Core Blockchain
    ```
 
 4. **Run the development server**
-   ```bash
-   npm run dev
+```bash
+npm run dev
    ```
 
 5. **Open your browser**

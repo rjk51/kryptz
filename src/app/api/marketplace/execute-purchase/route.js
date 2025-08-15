@@ -183,8 +183,8 @@ export async function POST(req) {
 
     // Initialize provider and contract instances with explicit network config
     const provider = new ethers.JsonRpcProvider(CORE_RPC_URL, {
-      chainId: 1116,
-      name: "Core Mainnet",
+      chainId: 1114,
+      name: "Core Testnet",
       ensAddress: null // Disable ENS resolution
     });
     
